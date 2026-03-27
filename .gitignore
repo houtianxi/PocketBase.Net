@@ -1,0 +1,42 @@
+# Backend
+backend/bin/
+backend/obj/
+backend/*.db
+backend/*.sqlite
+backend/*.sqlite3
+backend/appsettings.Development.json
+backend/.vs/
+backend/.vscode/
+backend/*.user
+backend/Properties/launchSettings.json
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.*.local
+frontend/*.log
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# IDEs
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.vsidx
+*.userprefs
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Build artifacts
+*.exe
+*.dll
+*.pdb
+pocketbase.net.db

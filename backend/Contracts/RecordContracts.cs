@@ -1,0 +1,19 @@
+namespace PocketbaseNet.Api.Contracts;
+
+public record RecordCreateRequest(Dictionary<string, object?> Data);
+public record RecordUpdateRequest(Dictionary<string, object?> Data);
+
+/// <summary>
+/// Maps old JSON key names to new field names during a data-repair operation.
+/// Use an empty string as the new key to simply delete the orphaned key.
+/// </summary>
+public record RepairDataRequest(Dictionary<string, string> KeyMap);
+
+public record RecordResponse(
+    Guid Id,
+    Guid CollectionId,
+    string CollectionSlug,
+    Dictionary<string, object?> Data,
+    string? OwnerId,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt);
