@@ -42,7 +42,8 @@ public class RecordsController(
 
         if (!ruleEvaluator.CanList(collection))
         {
-            throw new ForbiddenException();
+            var ruleLevel = collection.ListRule.ToString();
+            throw new ForbiddenException($"Access denied to list records in '{collection.Name}'. Required permission level: {ruleLevel}. Make sure you are authenticated and have the proper roles.");
         }
 
         page = Math.Max(1, page);
@@ -82,33 +83,28 @@ public class RecordsController(
             .Take(perPage)
             .ToList();
 
-        // Parse expand fields
-        var expandFields = RelationExpander.ParseExpandFields(expand);
+        // Auto-expand all Relation fields; merge with any additional fields requested via ?expand=
+        var allRelationFields = RelationExpander.GetAllRelationFieldNames(collection.Fields.ToList());
+        var explicitExpandFields = RelationExpander.ParseExpandFields(expand);
+        var expandFields = allRelationFields
+            .Union(explicitExpandFields, StringComparer.OrdinalIgnoreCase)
+            .ToList();
 
-        // Map to responses with relation expansion
+        // Map to responses, always expanding relation fields to full objects
+        var collectionFieldsList = collection.Fields.ToList();
         var responses = new List<RecordResponse>();
         foreach (var record in paginatedRecords)
         {
-            var response = ToResponse(record, collectionSlug, selectedFields);
-            
-            // Expand relations if requested
+            var data = JsonSerializer.Deserialize<Dictionary<string, object?>>(record.DataJson)
+                       ?? new Dictionary<string, object?>();
+
             if (expandFields.Count > 0)
             {
-                var data = JsonSerializer.Deserialize<Dictionary<string, object?>>(record.DataJson) ?? new();
-                data = await relationExpander.ExpandRelations(data, collection.Fields.ToList(), expandFields);
-                
-                // Rebuild response with expanded data
-                response = new RecordResponse(
-                    record.Id,
-                    record.CollectionDefinitionId,
-                    collectionSlug,
-                    data,
-                    record.OwnerId,
-                    record.CreatedAt,
-                    record.UpdatedAt);
+                data = await relationExpander.ExpandRelations(data, collectionFieldsList, expandFields);
             }
-            
-            responses.Add(response);
+
+            // Apply field selection on top of the expanded data
+            responses.Add(ToResponseFromData(record, collectionSlug, data, selectedFields));
         }
 
         return Ok(new
@@ -265,7 +261,9 @@ public class RecordsController(
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<RecordResponse>> Get(string collectionSlug, Guid id)
     {
-        var collection = await db.Collections.FirstOrDefaultAsync(x => x.Slug == collectionSlug);
+        var collection = await db.Collections
+            .Include(c => c.Fields)
+            .FirstOrDefaultAsync(x => x.Slug == collectionSlug);
         if (collection is null)
         {
             throw new NotFoundException($"Collection '{collectionSlug}' not found");
@@ -282,7 +280,58 @@ public class RecordsController(
             throw new ForbiddenException();
         }
 
-        return Ok(ToResponse(record, collectionSlug));
+        var allRelationFields = RelationExpander.GetAllRelationFieldNames(collection.Fields.ToList());
+        var data = JsonSerializer.Deserialize<Dictionary<string, object?>>(record.DataJson)
+                   ?? new Dictionary<string, object?>();
+        if (allRelationFields.Count > 0)
+        {
+            data = await relationExpander.ExpandRelations(data, collection.Fields.ToList(), allRelationFields);
+        }
+
+        return Ok(ToResponseFromData(record, collectionSlug, data, null));
+    }
+
+    [HttpGet("diagnose")]
+    [Authorize]
+    public async Task<ActionResult> DiagnoseCollection(string collectionSlug)
+    {
+        var collection = await db.Collections.FirstOrDefaultAsync(x => x.Slug == collectionSlug);
+        if (collection is null)
+        {
+            throw new NotFoundException($"Collection '{collectionSlug}' not found");
+        }
+
+        var ruleDescriptions = new Dictionary<int, string>
+        {
+            { 0, "Public (anyone)" },
+            { 1, "Authenticated users" },
+            { 2, "Record owner only" },
+            { 3, "Admin only" }
+        };
+
+        return Ok(new
+        {
+            collection = new { collection.Name, collection.Slug },
+            permissions = new
+            {
+                listRule = new { level = (int)collection.ListRule, description = ruleDescriptions[(int)collection.ListRule] },
+                viewRule = new { level = (int)collection.ViewRule, description = ruleDescriptions[(int)collection.ViewRule] },
+                createRule = new { level = (int)collection.CreateRule, description = ruleDescriptions[(int)collection.CreateRule] },
+                updateRule = new { level = (int)collection.UpdateRule, description = ruleDescriptions[(int)collection.UpdateRule] },
+                deleteRule = new { level = (int)collection.DeleteRule, description = ruleDescriptions[(int)collection.DeleteRule] }
+            },
+            currentUser = new
+            {
+                userId = currentUser.UserId,
+                isAuthenticated = currentUser.IsAuthenticated,
+                isAdmin = currentUser.IsAdmin
+            },
+            canAccess = new
+            {
+                list = ruleEvaluator.CanList(collection),
+                create = ruleEvaluator.CanCreate(collection)
+            }
+        });
     }
 
     [Authorize]
@@ -896,6 +945,52 @@ public class RecordsController(
             }
 
             data = filtered;
+        }
+
+        return new RecordResponse(
+            record.Id,
+            record.CollectionDefinitionId,
+            collectionSlug,
+            data,
+            record.OwnerId,
+            record.CreatedAt,
+            record.UpdatedAt);
+    }
+
+    /// <summary>
+    /// Build a RecordResponse from an already-expanded data dictionary.
+    /// Applies optional selectedFields projection on top of the expanded data.
+    /// </summary>
+    private static RecordResponse ToResponseFromData(
+        EntityRecord record,
+        string collectionSlug,
+        Dictionary<string, object?> expandedData,
+        List<string>? selectedFields)
+    {
+        Dictionary<string, object?> data;
+
+        if (selectedFields == null || selectedFields.Count == 0)
+        {
+            data = new Dictionary<string, object?>(expandedData)
+            {
+                ["id"] = record.Id,
+                ["created"] = record.CreatedAt,
+                ["updated"] = record.UpdatedAt
+            };
+        }
+        else
+        {
+            data = new Dictionary<string, object?>();
+            if (selectedFields.Contains("id"))      data["id"]      = record.Id;
+            if (selectedFields.Contains("created")) data["created"] = record.CreatedAt;
+            if (selectedFields.Contains("updated")) data["updated"] = record.UpdatedAt;
+
+            foreach (var field in selectedFields)
+            {
+                if (field is "id" or "created" or "updated") continue;
+                if (expandedData.TryGetValue(field, out var value))
+                    data[field] = value;
+            }
         }
 
         return new RecordResponse(

@@ -165,4 +165,16 @@ public class RelationExpander
             .Where(f => !string.IsNullOrWhiteSpace(f))
             .ToList();
     }
+
+    /// <summary>
+    /// Returns the names of every Relation-typed field in the collection.
+    /// Used to auto-expand all relation fields without requiring an explicit ?expand= parameter.
+    /// </summary>
+    public static List<string> GetAllRelationFieldNames(List<Field> fields)
+    {
+        return fields
+            .Where(f => f.Type == Domain.Enums.FieldType.Relation)
+            .Select(f => f.Name)
+            .ToList();
+    }
 }
