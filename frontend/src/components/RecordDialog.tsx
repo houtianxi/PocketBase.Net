@@ -1,6 +1,6 @@
 ﻿import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { Check, ExternalLink, X, Download } from 'lucide-react';
+import { Check, X, Download } from 'lucide-react';
 import dayjs from 'dayjs';
 import { DatePicker, Upload, ConfigProvider, message } from 'antd';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
@@ -48,19 +48,41 @@ type RelationRecord = {
     data: Record<string, unknown>;  // Full record data
 };
 
+type RelationDisplayFieldMeta = {
+    name: string;
+    label: string;
+};
+
 type RelationCollectionMap = Record<string, {
     id: string;
     name: string;
-    displayFields: string[];  // Fields used for display [primary, secondary?]
+    displayFields: RelationDisplayFieldMeta[];
     records: RelationRecord[];
 }>;
 
 type FileMetadataMap = Record<string, FileMetadata>;
 
-function RelationPickerDialog({ open, onClose, collectionName, records, selectedIds, isMultiple, onConfirm }: {
+function parseFieldConfig(config: unknown): Record<string, unknown> {
+    try {
+        const parsed = typeof config === 'string' ? JSON.parse(config) : config;
+        if (parsed && typeof parsed === 'object') {
+            return parsed as Record<string, unknown>;
+        }
+    } catch {
+        // ignore
+    }
+    return {};
+}
+
+function getFieldDisplayText(field: Pick<Field, 'name' | 'label' | 'description'>): string {
+    return field.description?.trim() || field.label?.trim() || field.name;
+}
+
+function RelationPickerDialog({ open, onClose, collectionName, displayFields, records, selectedIds, isMultiple, onConfirm }: {
     open: boolean;
     onClose: () => void;
     collectionName: string;
+    displayFields: RelationDisplayFieldMeta[];
     records: RelationRecord[];
     selectedIds: string[];
     isMultiple: boolean;
@@ -78,13 +100,29 @@ function RelationPickerDialog({ open, onClose, collectionName, records, selected
         prevOpen.current = open;
     }, [open, selectedIds]);
 
+    const columns = displayFields.length > 0
+        ? displayFields
+        : [{ name: 'displayName', label: collectionName }];
+
+    const getCellValue = (record: RelationRecord, columnName: string): string => {
+        if (columnName === 'displayName') return record.displayName;
+        const raw = record.data[columnName];
+        if (raw === null || raw === undefined) return '-';
+        if (typeof raw === 'string') return raw.trim() || '-';
+        if (typeof raw === 'number' || typeof raw === 'boolean') return String(raw);
+        if (Array.isArray(raw)) return raw.map(v => String(v)).filter(Boolean).join(' / ') || '-';
+        return '-';
+    };
+
     const filtered = records.filter(r => {
-        const searchLower = search.toLowerCase();
-        return (
-            r.displayName.toLowerCase().includes(searchLower) ||
-            (r.displayDesc || '').toLowerCase().includes(searchLower) ||
-            r.id.toLowerCase().includes(searchLower)
-        );
+        const q = search.toLowerCase().trim();
+        if (!q) return true;
+
+        if (r.displayName.toLowerCase().includes(q)) return true;
+        if ((r.displayDesc || '').toLowerCase().includes(q)) return true;
+        if (r.id.toLowerCase().includes(q)) return true;
+
+        return columns.some(col => getCellValue(r, col.name).toLowerCase().includes(q));
     });
 
     const toggle = (id: string) => {
@@ -99,10 +137,13 @@ function RelationPickerDialog({ open, onClose, collectionName, records, selected
         <DialogPrimitive.Root open={open} onOpenChange={v => !v && onClose()}>
             <DialogPrimitive.Portal>
                 <DialogPrimitive.Overlay className="fixed inset-0 z-[250] bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-                <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-[250] w-[580px] max-w-[92vw] translate-x-[-50%] translate-y-[-50%] rounded-lg border bg-background shadow-xl flex flex-col max-h-[82vh] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 overflow-hidden">
+                <DialogPrimitive.Content className={cn(
+                    'fixed left-[50%] top-[50%] z-[250] max-w-[94vw] translate-x-[-50%] translate-y-[-50%] rounded-lg border bg-background shadow-xl flex flex-col max-h-[82vh] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 overflow-hidden',
+                    columns.length <= 2 ? 'w-[620px]' : columns.length <= 4 ? 'w-[820px]' : 'w-[980px]'
+                )}>
                     {/* Header */}
                     <div className="flex items-center justify-between px-6 py-4 border-b shrink-0">
-                        <DialogPrimitive.Title className="text-base font-semibold">Select {collectionName} records</DialogPrimitive.Title>
+                        <DialogPrimitive.Title className="text-base font-semibold">选择:{collectionName}</DialogPrimitive.Title>
                         <DialogPrimitive.Close className="rounded-sm opacity-70 hover:opacity-100 focus:outline-none">
                             <X className="h-4 w-4" />
                             <span className="sr-only">Close</span>
@@ -111,69 +152,76 @@ function RelationPickerDialog({ open, onClose, collectionName, records, selected
                     {/* Search */}
                     <div className="px-6 py-3 border-b shrink-0">
                         <Input
-                            placeholder="Search term or filter like created > '2022-01-01'..."
+                            placeholder="搜索..."
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                             autoFocus
                         />
                     </div>
-                    {/* Record list */}
-                    <div className="flex-1 overflow-y-auto min-h-0">
-                        {filtered.length === 0 ? (
-                            <p className="text-center text-sm text-muted-foreground py-10">No records found</p>
-                        ) : filtered.map(r => {
-                            const isSelected = local.includes(r.id);
-                            return (
-                                <div
-                                    key={r.id}
-                                    className={cn(
-                                        'flex items-center gap-3 px-6 py-3 cursor-pointer transition-colors hover:bg-accent/50 border-b last:border-0',
-                                        isSelected && 'bg-accent/20'
-                                    )}
-                                    onClick={() => toggle(r.id)}
-                                >
-                                    <div className={cn(
-                                        'h-5 w-5 shrink-0 rounded-full border-2 flex items-center justify-center transition-colors',
-                                        isSelected ? 'bg-green-500 border-green-500' : 'border-muted-foreground/40'
-                                    )}>
-                                        {isSelected && <Check className="h-3 w-3 text-white" />}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium truncate">{r.displayName}</p>
-                                        {r.displayDesc && (
-                                            <p className="text-xs text-muted-foreground truncate mt-0.5">{r.displayDesc}</p>
-                                        )}
-                                    </div>
-                                    <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                                </div>
-                            );
-                        })}
+                    {/* Title + table */}
+                    <div className="px-6 pt-3 pb-2 shrink-0 text-sm">
+                        {/* <span className="font-semibold text-foreground">title:</span> */}
+                        {/* <span className="ml-2 text-muted-foreground">{collectionName}</span> */}
                     </div>
-                    {/* Selected pills */}
-                    {local.length > 0 && (
-                        <div className="px-6 py-3 border-t bg-muted/20 shrink-0">
-                            <p className="text-xs font-medium text-muted-foreground mb-2">Selected</p>
-                            <div className="flex flex-wrap gap-1.5">
-                                {local.map(id => {
-                                    const r = records.find(x => x.id === id);
-                                    return (
-                                        <div key={id} className="flex items-center gap-1 rounded-full bg-secondary border px-2.5 py-0.5 text-xs">
-                                            <span className="max-w-[200px] truncate">{r?.displayName || id.substring(0, 8)}</span>
-                                            <ExternalLink className="h-2.5 w-2.5 text-muted-foreground" />
-                                            <button
-                                                className="ml-0.5 hover:text-destructive leading-none"
-                                                onClick={e => { e.stopPropagation(); toggle(id); }}
-                                            >×</button>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+
+                    <div className="flex-1 overflow-auto min-h-0 px-6 pb-3">
+                        <div className="overflow-hidden rounded-md border">
+                            <table className="w-full text-sm">
+                                <thead className="bg-muted/40">
+                                    <tr>
+                                        <th className="w-12 px-3 py-2 text-center font-medium text-muted-foreground">选择</th>
+                                        {columns.map(col => (
+                                            <th key={col.name} className="px-3 py-2 text-left font-medium text-muted-foreground">
+                                                {col.label}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filtered.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={columns.length + 1} className="py-10 text-center text-sm text-muted-foreground">
+                                                没有匹配的数据
+                                            </td>
+                                        </tr>
+                                    ) : filtered.map(r => {
+                                        const isSelected = local.includes(r.id);
+                                        return (
+                                            <tr
+                                                key={r.id}
+                                                className={cn('border-t transition-colors hover:bg-accent/40 cursor-pointer', isSelected && 'bg-accent/20')}
+                                                onClick={() => toggle(r.id)}
+                                            >
+                                                <td className="px-3 py-2.5 text-center" onClick={e => e.stopPropagation()}>
+                                                    <button
+                                                        type="button"
+                                                        className={cn(
+                                                            'h-5 w-5 rounded-full border-2 inline-flex items-center justify-center transition-colors',
+                                                            isSelected ? 'bg-green-500 border-green-500' : 'border-muted-foreground/40'
+                                                        )}
+                                                        onClick={() => toggle(r.id)}
+                                                    >
+                                                        {isSelected && <Check className="h-3 w-3 text-white" />}
+                                                    </button>
+                                                </td>
+                                                {columns.map(col => (
+                                                    <td key={col.name} className="px-3 py-2.5 text-left text-foreground/90 whitespace-nowrap">
+                                                        {getCellValue(r, col.name)}
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
                         </div>
-                    )}
+                    </div>
+
                     {/* Footer */}
                     <div className="flex justify-end gap-2 px-6 py-4 border-t shrink-0">
-                        <Button variant="outline" onClick={onClose}>Cancel</Button>
-                        <Button onClick={() => { onConfirm(local); onClose(); }}>Set selection</Button>
+                        <div className="mr-auto text-xs text-muted-foreground self-center">已选 {local.length} 条</div>
+                        <Button variant="outline" onClick={onClose}>取消</Button>
+                        <Button onClick={() => { onConfirm(local); onClose(); }}>确认选择</Button>
                     </div>
                 </DialogPrimitive.Content>
             </DialogPrimitive.Portal>
@@ -265,6 +313,7 @@ function RelationField({ field, value, onChange, relationCollections }: {
     relationCollections?: RelationCollectionMap;
 }) {
     const [pickerOpen, setPickerOpen] = useState(false);
+    const [expanded, setExpanded] = useState(false);
 
     let relConfig = { collectionId: '', relationType: 'oneToMany' };
     try {
@@ -276,46 +325,139 @@ function RelationField({ field, value, onChange, relationCollections }: {
     const collectionInfo = relationCollections?.[relConfig.collectionId];
     const records = collectionInfo?.records || [];
     const collectionName = collectionInfo?.name || 'records';
+    const displayFields = collectionInfo?.displayFields || [];
 
     const selectedIds: string[] = isMultiple
         ? (Array.isArray(value) ? value as string[] : (value && typeof value === 'string' ? [value] : []))
         : (value && typeof value === 'string' ? [value] : []);
 
+    const selectedItems = selectedIds.map(id => {
+        const r = records.find(x => x.id === id);
+        const lines = (r && displayFields.length > 0
+            ? displayFields
+                .map(meta => {
+                    const raw = r.data?.[meta.name];
+                    if (raw === null || raw === undefined) return null;
+                    if (typeof raw === 'string') {
+                        const trimmed = raw.trim();
+                        return trimmed ? { label: meta.label, value: trimmed } : null;
+                    }
+                    if (typeof raw === 'number' || typeof raw === 'boolean') {
+                        return { label: meta.label, value: String(raw) };
+                    }
+                    if (Array.isArray(raw)) {
+                        const joined = raw.map(v => String(v)).filter(Boolean).join(' / ');
+                        return joined ? { label: meta.label, value: joined } : null;
+                    }
+                    return null;
+                })
+                .filter((line): line is { label: string; value: string } => Boolean(line))
+            : []);
+
+        const title = lines[0]?.value || r?.displayName || id.substring(0, 8);
+        const detailLines = lines.length > 1 ? lines.slice(1) : (
+            r?.displayDesc ? [{ label: '描述', value: r.displayDesc }] : []
+        );
+
+        return {
+            id,
+            title,
+            lines: detailLines,
+        };
+    });
+
+    const visibleItems = expanded ? selectedItems : selectedItems.slice(0, 1);
+    const hiddenCount = selectedItems.length - visibleItems.length;
+
     return (
         <>
-            <div className="flex gap-2">
-                <button
-                    type="button"
-                    className="flex-1 min-h-[36px] flex items-center gap-1.5 flex-wrap rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-sm hover:bg-accent/30 cursor-pointer text-left transition-colors"
-                    onClick={() => setPickerOpen(true)}
-                >
-                    {selectedIds.length === 0 ? (
-                        <span className="text-muted-foreground">Select {collectionName}...</span>
-                    ) : selectedIds.map(id => {
-                        const r = records.find(x => x.id === id);
-                        return (
-                            <span key={id} className="rounded-full bg-secondary px-2 py-0.5 text-xs max-w-[200px] truncate">
-                                {r?.displayName || id.substring(0, 8)}
-                            </span>
-                        );
-                    })}
-                </button>
-                {selectedIds.length > 0 && (
-                    <Button
+            <div className="flex flex-col gap-1.5">
+                <div className="flex items-start gap-2">
+                    <button
                         type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-9 w-9 shrink-0"
-                        onClick={() => onChange(isMultiple ? [] : '')}
+                        className="min-h-[40px] flex-1 rounded-md border border-input bg-transparent px-3 py-1.5 text-left text-sm shadow-sm transition-colors hover:bg-accent/20"
+                        onClick={() => setPickerOpen(true)}
                     >
-                        <X className="h-4 w-4" />
-                    </Button>
-                )}
+                        {selectedIds.length === 0 ? (
+                            <span className="text-muted-foreground">选择 {collectionName}...</span>
+                        ) : (
+                            <span className="text-muted-foreground">已选 {selectedIds.length} 条，点击修改</span>
+                        )}
+                    </button>
+
+                    {selectedIds.length > 0 && (
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9 shrink-0"
+                            onClick={() => { onChange(isMultiple ? [] : ''); setExpanded(false); }}
+                        >
+                            <X className="h-4 w-4" />
+                        </Button>
+                    )}
+                </div>
+
+                {selectedItems.length > 0 ? (
+                    <div className="flex flex-col gap-1.5">
+                        {visibleItems.map((item, index) => (
+                            <div key={`${item.id}-${index}`} className={cn(
+                                'rounded-xl bg-gradient-to-br from-white via-white to-slate-50/70 shadow-sm transition-all duration-150',
+                                'dark:from-slate-950 dark:via-slate-950 dark:to-slate-900/40',
+                                'hover:shadow-md'
+                            )}>
+                                <div className="rounded-t-xl bg-white/95 px-3.5 py-1.5 dark:bg-slate-100/95">
+                                    <div className="truncate text-[12px] font-semibold tracking-wide text-slate-800 dark:text-slate-900">{item.title}</div>
+                                </div>
+                                {item.lines.length > 0 ? (
+                                    <div className="pb-2 pt-1">
+                                        {item.lines.map((line, lineIndex) => (
+                                            <div
+                                                key={`${line.label}-${lineIndex}`}
+                                                className="grid grid-cols-[88px_1fr] items-start gap-2 px-3.5 py-0.5 text-[11px] leading-4"
+                                            >
+                                                <span className="truncate text-left font-medium text-muted-foreground/80">{line.label}:</span>
+                                                <span className="break-words text-left text-foreground/90">{line.value}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : null}
+                            </div>
+                        ))}
+
+                        {hiddenCount > 0 ? (
+                            <button
+                                type="button"
+                                className="w-fit rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary transition-all hover:border-primary/50 hover:bg-primary/15 hover:shadow-sm"
+                                onClick={e => {
+                                    e.stopPropagation();
+                                    setExpanded(true);
+                                }}
+                            >
+                                + {hiddenCount} 条
+                            </button>
+                        ) : null}
+
+                        {expanded && selectedItems.length > 1 ? (
+                            <button
+                                type="button"
+                                className="w-fit rounded-full px-2.5 py-1 text-xs font-medium text-muted-foreground transition-all hover:text-foreground hover:underline"
+                                onClick={e => {
+                                    e.stopPropagation();
+                                    setExpanded(false);
+                                }}
+                            >
+                                收起
+                            </button>
+                        ) : null}
+                    </div>
+                ) : null}
             </div>
             <RelationPickerDialog
                 open={pickerOpen}
                 onClose={() => setPickerOpen(false)}
                 collectionName={collectionName}
+                displayFields={displayFields}
                 records={records}
                 selectedIds={selectedIds}
                 isMultiple={isMultiple}
@@ -880,25 +1022,17 @@ export function RecordDialog({ open, collection, fields, record, onClose, onSave
                     const fieldsRes = await api.get<Field[]>(`/collections/${targetCollection.id}/fields`);
                     const collectionFields = fieldsRes.data.filter(f => !f.isSystem);
 
-                    // Determine display fields: primary (name/title/label or first text field) and secondary (description or second text field)
-                    const primaryCandidates = ['name', 'title', 'label', '名称', '标题'];
-                    const secondaryCandidates = ['description', 'desc', 'summary', '描述', '备注'];
-                    const textFieldTypes: number[] = [FieldType.Text, FieldType.Email, FieldType.Url, FieldType.Textarea];
+                    const relationDisplayFields = collectionFields
+                        .filter(f => parseFieldConfig(f.config).displayInRelation === true)
+                        .map(f => ({ name: f.name, label: getFieldDisplayText(f) }));
 
-                    let primaryField = collectionFields.find(f => primaryCandidates.includes(f.name.toLowerCase()))?.name;
-                    let secondaryField = collectionFields.find(f => secondaryCandidates.includes(f.name.toLowerCase()))?.name;
+                    const fallbackFieldTypes: number[] = [FieldType.Text, FieldType.Number, FieldType.Email, FieldType.Url];
+                    const fallbackDisplayFields = collectionFields
+                        .filter(f => fallbackFieldTypes.includes(f.type))
+                        .slice(0, 3)
+                        .map(f => ({ name: f.name, label: getFieldDisplayText(f) }));
 
-                    // Fallback: use first/second text fields
-                    if (!primaryField) {
-                        const textFields = collectionFields.filter(f => textFieldTypes.includes(f.type));
-                        if (textFields.length > 0) primaryField = textFields[0].name;
-                    }
-                    if (!secondaryField) {
-                        const textFields = collectionFields.filter(f => textFieldTypes.includes(f.type) && f.name !== primaryField);
-                        if (textFields.length > 0) secondaryField = textFields[0].name;
-                    }
-
-                    const displayFields = [primaryField, secondaryField].filter(Boolean) as string[];
+                    const displayFields = relationDisplayFields.length > 0 ? relationDisplayFields : fallbackDisplayFields;
 
                     // Load records
                     const res = await api.get<{ items: Array<{ id: string; data: Record<string, unknown> }> }>(`/records/${targetCollection.slug}`, {
@@ -907,17 +1041,17 @@ export function RecordDialog({ open, collection, fields, record, onClose, onSave
 
                     relCollections[relConfig.collectionId] = {
                         id: targetCollection.id,
-                        name: targetCollection.name,
+                        name: targetCollection.description?.trim() || targetCollection.name,
                         displayFields,
                         records: res.data.items.map(item => {
                             const data = item.data;
-                            // Build display name: use primary field, or fallback to id
-                            const displayName = primaryField && data[primaryField]
-                                ? String(data[primaryField])
+                            const displayNameField = displayFields[0]?.name;
+                            const displayDescField = displayFields[1]?.name;
+                            const displayName = displayNameField && data[displayNameField]
+                                ? String(data[displayNameField])
                                 : (data.name || data.title || data.label || item.id.substring(0, 8)) as string;
-                            // Build display description: use secondary field if available
-                            const displayDesc = secondaryField && data[secondaryField]
-                                ? String(data[secondaryField])
+                            const displayDesc = displayDescField && data[displayDescField]
+                                ? String(data[displayDescField])
                                 : undefined;
                             return {
                                 id: item.id,

@@ -24,6 +24,11 @@ export type LoginResponse = {
     roles: string[];
 };
 
+export type ChangePasswordRequest = {
+    oldPassword: string;
+    newPassword: string;
+};
+
 // Collection types
 export type CollectionItem = {
     id: string;
@@ -167,7 +172,7 @@ export type FileAttachmentResponse = {
 
 export type PagedRecordResponse<T = any> = {
     page: number;
-    pageSize: number;
+    perPage: number;
     totalItems: number;
     totalPages: number;
     items: T[];

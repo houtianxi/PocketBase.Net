@@ -60,11 +60,11 @@ export function LogsView() {
         try {
             const res = await api.get<{
                 page: number;
-                pageSize: number;
+                perPage: number;
                 totalItems: number;
                 totalPages: number;
                 items: AuditLog[];
-            }>('/logs', { params: { page: p, pageSize: 50, search: search || undefined } });
+            }>('/logs', { params: { page: p, perPage: 50, search: search || undefined } });
             setLogs(res.data.items ?? []);
             setTotal(res.data.totalItems);
             setTotalPages(res.data.totalPages || 1);

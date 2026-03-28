@@ -71,6 +71,16 @@ function parseSelectOpts(config: unknown): string[] {
     return [];
 }
 
+function parseFieldConfig(config: unknown): Record<string, unknown> {
+    try {
+        const parsed = typeof config === 'string' ? JSON.parse(config) : config;
+        if (parsed && typeof parsed === 'object') {
+            return parsed as Record<string, unknown>;
+        }
+    } catch { /* */ }
+    return {};
+}
+
 function parseRelation(config: unknown): { collectionId: string; relationType: 'oneToMany' | 'manyToMany' } {
     try {
         const c = typeof config === 'string' ? JSON.parse(config) : config;
@@ -90,12 +100,41 @@ function buildCfg(
     selectOpts: string[],
     relCollId: string,
     relType: 'oneToMany' | 'manyToMany',
+    displayInRelation: boolean,
+    numberMin: string,
+    numberMax: string,
+    selectDefaultValue: string,
+    checkboxDefaultValue: boolean,
 ): string {
-    if (type === FieldType.Select)
-        return JSON.stringify({ values: selectOpts.map(v => v.trim()).filter(Boolean) });
-    if (type === FieldType.Relation)
-        return JSON.stringify({ collectionId: relCollId, relationType: relType });
-    return '{}';
+    const cfg: Record<string, unknown> = {
+        displayInRelation,
+    };
+
+    if (type === FieldType.Select) {
+        const values = selectOpts.map(v => v.trim()).filter(Boolean);
+        cfg.values = values;
+        if (selectDefaultValue && values.includes(selectDefaultValue)) {
+            cfg.defaultValue = selectDefaultValue;
+        }
+    }
+
+    if (type === FieldType.Relation) {
+        cfg.collectionId = relCollId;
+        cfg.relationType = relType;
+    }
+
+    if (type === FieldType.Number) {
+        const min = numberMin.trim();
+        const max = numberMax.trim();
+        if (min !== '' && !Number.isNaN(Number(min))) cfg.min = Number(min);
+        if (max !== '' && !Number.isNaN(Number(max))) cfg.max = Number(max);
+    }
+
+    if (type === FieldType.Checkbox) {
+        cfg.defaultValue = checkboxDefaultValue;
+    }
+
+    return JSON.stringify(cfg);
 }
 
 //  Field draft 
@@ -108,22 +147,38 @@ interface FieldDraft {
     selectOpts: string[];
     relCollId: string;
     relType: 'oneToMany' | 'manyToMany';
+    displayInRelation: boolean;
+    numberMin: string;
+    numberMax: string;
+    selectDefaultValue: string;
+    checkboxDefaultValue: boolean;
 }
 
 const EMPTY_DRAFT: FieldDraft = {
     name: '', label: '', type: FieldType.Text,
     isRequired: false, isUnique: false,
     selectOpts: [''], relCollId: '', relType: 'oneToMany',
+    displayInRelation: true,
+    numberMin: '',
+    numberMax: '',
+    selectDefaultValue: '',
+    checkboxDefaultValue: false,
 };
 
 function toDraft(f: Field): FieldDraft {
     const opts = parseSelectOpts(f.config);
     const rel = parseRelation(f.config);
+    const cfg = parseFieldConfig(f.config);
     return {
         name: f.name, label: f.label, type: f.type,
         isRequired: f.isRequired, isUnique: f.isUnique,
         selectOpts: opts.length ? opts : [''],
         relCollId: rel.collectionId, relType: rel.relationType,
+        displayInRelation: cfg.displayInRelation !== false,
+        numberMin: cfg.min === undefined || cfg.min === null ? '' : String(cfg.min),
+        numberMax: cfg.max === undefined || cfg.max === null ? '' : String(cfg.max),
+        selectDefaultValue: typeof cfg.defaultValue === 'string' ? cfg.defaultValue : '',
+        checkboxDefaultValue: cfg.defaultValue === true,
     };
 }
 
@@ -203,8 +258,20 @@ function FieldEditor({ initial, isNew, allCollections, collectionId, onSave, onC
             return 'Name must be lowercase, start with a letter, only letters/digits/underscores';
         if (d.type === FieldType.Select && !d.selectOpts.some(o => o.trim()))
             return 'At least one option is required';
+        if (d.type === FieldType.Select) {
+            const values = d.selectOpts.map(o => o.trim()).filter(Boolean);
+            if (d.selectDefaultValue && !values.includes(d.selectDefaultValue)) {
+                return 'Select default value must match an option';
+            }
+        }
         if (d.type === FieldType.Relation && !d.relCollId)
             return 'Target collection is required';
+        if (d.type === FieldType.Number && d.numberMin.trim() && Number.isNaN(Number(d.numberMin)))
+            return 'Number min must be a valid number';
+        if (d.type === FieldType.Number && d.numberMax.trim() && Number.isNaN(Number(d.numberMax)))
+            return 'Number max must be a valid number';
+        if (d.type === FieldType.Number && d.numberMin.trim() && d.numberMax.trim() && Number(d.numberMin) > Number(d.numberMax))
+            return 'Number min cannot be greater than max';
         return null;
     };
 
@@ -277,6 +344,53 @@ function FieldEditor({ initial, isNew, allCollections, collectionId, onSave, onC
                     </label>
                 </div>
 
+                {/* Relation display visibility */}
+                <div className="flex items-center gap-6 rounded-lg border border-dashed px-4 py-2.5 bg-muted/20">
+                    <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                        <Switch checked={d.displayInRelation} onCheckedChange={v => p({ displayInRelation: v })} />
+                        <div>
+                            <p className="text-xs font-medium">Display in relation</p>
+                            <p className="text-[10px] text-muted-foreground">Used when this collection is selected by Relation fields</p>
+                        </div>
+                    </label>
+                </div>
+
+                {/* Number: min/max */}
+                {d.type === FieldType.Number && (
+                    <div className="space-y-2 rounded-lg border p-3 bg-muted/20">
+                        <Label className="text-xs font-medium">Range</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                            <Input
+                                className="h-8 text-xs"
+                                type="number"
+                                placeholder="Min (optional)"
+                                value={d.numberMin}
+                                onChange={e => p({ numberMin: e.target.value })}
+                            />
+                            <Input
+                                className="h-8 text-xs"
+                                type="number"
+                                placeholder="Max (optional)"
+                                value={d.numberMax}
+                                onChange={e => p({ numberMax: e.target.value })}
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {/* Checkbox: default */}
+                {d.type === FieldType.Checkbox && (
+                    <div className="flex items-center gap-6 rounded-lg border border-dashed px-4 py-2.5 bg-muted/20">
+                        <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                            <Switch checked={d.checkboxDefaultValue} onCheckedChange={v => p({ checkboxDefaultValue: v })} />
+                            <div>
+                                <p className="text-xs font-medium">Default value</p>
+                                <p className="text-[10px] text-muted-foreground">New records use {d.checkboxDefaultValue ? 'true' : 'false'}</p>
+                            </div>
+                        </label>
+                    </div>
+                )}
+
                 {/* Select: options */}
                 {d.type === FieldType.Select && (
                     <div className="space-y-2">
@@ -318,6 +432,21 @@ function FieldEditor({ initial, isNew, allCollections, collectionId, onSave, onC
                         >
                             <Plus className="mr-1 h-3.5 w-3.5" />Add option
                         </Button>
+
+                        <div className="space-y-1.5 pt-1">
+                            <Label className="text-xs font-medium">Default option</Label>
+                            <Select value={d.selectDefaultValue || '__none__'} onValueChange={v => p({ selectDefaultValue: v === '__none__' ? '' : v })}>
+                                <SelectTrigger className="h-8 text-xs">
+                                    <SelectValue placeholder="No default" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="__none__" className="text-xs italic text-muted-foreground">No default</SelectItem>
+                                    {d.selectOpts.map(o => o.trim()).filter(Boolean).map(o => (
+                                        <SelectItem key={o} value={o} className="text-xs">{o}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
                 )}
 
@@ -466,7 +595,7 @@ export function CollectionDialog({ open, onClose, collection, onSaved }: Collect
                     type: draft.type,
                     isRequired: draft.isRequired,
                     isUnique: draft.isUnique,
-                    config: buildCfg(draft.type, draft.selectOpts, draft.relCollId, draft.relType),
+                    config: buildCfg(draft.type, draft.selectOpts, draft.relCollId, draft.relType, draft.displayInRelation, draft.numberMin, draft.numberMax, draft.selectDefaultValue, draft.checkboxDefaultValue),
                 });
                 setFields(prev => [...prev, res.data]);
             } catch (e: unknown) {
@@ -482,7 +611,7 @@ export function CollectionDialog({ open, onClose, collection, onSaved }: Collect
                 type: draft.type,
                 isRequired: draft.isRequired,
                 isUnique: draft.isUnique,
-                config: JSON.parse(buildCfg(draft.type, draft.selectOpts, draft.relCollId, draft.relType)) as Record<string, unknown>,
+                config: JSON.parse(buildCfg(draft.type, draft.selectOpts, draft.relCollId, draft.relType, draft.displayInRelation, draft.numberMin, draft.numberMax, draft.selectDefaultValue, draft.checkboxDefaultValue)) as Record<string, unknown>,
                 displayOrder: fields.length,
                 isSystem: false,
                 createdAt: '',
@@ -504,7 +633,7 @@ export function CollectionDialog({ open, onClose, collection, onSaved }: Collect
                     type: draft.type,
                     isRequired: draft.isRequired,
                     isUnique: draft.isUnique,
-                    config: buildCfg(draft.type, draft.selectOpts, draft.relCollId, draft.relType),
+                    config: buildCfg(draft.type, draft.selectOpts, draft.relCollId, draft.relType, draft.displayInRelation, draft.numberMin, draft.numberMax, draft.selectDefaultValue, draft.checkboxDefaultValue),
                 });
             } catch (e: unknown) {
                 setError((e as { response?: { data?: { message?: string } } }).response?.data?.message ?? 'Failed to update field');
@@ -518,7 +647,7 @@ export function CollectionDialog({ open, onClose, collection, onSaved }: Collect
             type: draft.type,
             isRequired: draft.isRequired,
             isUnique: draft.isUnique,
-            config: JSON.parse(buildCfg(draft.type, draft.selectOpts, draft.relCollId, draft.relType)) as Record<string, unknown>,
+            config: JSON.parse(buildCfg(draft.type, draft.selectOpts, draft.relCollId, draft.relType, draft.displayInRelation, draft.numberMin, draft.numberMax, draft.selectDefaultValue, draft.checkboxDefaultValue)) as Record<string, unknown>,
         }));
         setEditorOpen(null);
         setFieldEditorDirty(false);

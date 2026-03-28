@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using PocketbaseNet.Api.Domain.Entities;
 using PocketbaseNet.Api.Infrastructure;
 using PocketbaseNet.Api.Infrastructure.Auth;
+using PocketbaseNet.Api.Infrastructure.Middleware;
 using PocketbaseNet.Api.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -53,7 +54,9 @@ builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<CurrentUserAccessor>();
 builder.Services.AddScoped<RuleEvaluator>();
 builder.Services.AddScoped<FieldService>();
+builder.Services.AddScoped<RelationExpander>();
 builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
+builder.Services.AddSingleton<EventBus>();
 builder.Services.AddHttpContextAccessor();
 
 var jwtSection = builder.Configuration.GetSection("Jwt");
@@ -182,6 +185,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseErrorHandling();
 app.UseHttpsRedirection();
 app.UseCors("Frontend");
 app.UseAuthentication();

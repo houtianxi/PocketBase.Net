@@ -18,8 +18,8 @@ export function ApiPreviewDialog({ open, onClose, collection }: ApiPreviewDialog
         {
             label: 'List',
             method: 'GET',
-            url: `${base}/records/${slug}?page=1&pageSize=20`,
-            code: `const res = await fetch('${base}/records/${slug}?page=1&pageSize=20', {
+            url: `${base}/records/${slug}?page=1&perPage=20`,
+            code: `const res = await fetch('${base}/records/${slug}?page=1&perPage=20', {
   headers: { 'Authorization': 'Bearer YOUR_TOKEN' }
 });
 const data = await res.json();
@@ -82,9 +82,9 @@ const data = await res.json();
                             <TabsContent key={ep.label} value={ep.label} className="space-y-3">
                                 <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2">
                                     <span className={`rounded px-1.5 py-0.5 text-xs font-bold ${ep.method === 'GET' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' :
-                                            ep.method === 'POST' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' :
-                                                ep.method === 'PUT' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
-                                                    'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                                        ep.method === 'POST' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' :
+                                            ep.method === 'PUT' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
+                                                'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
                                         }`}>{ep.method}</span>
                                     <code className="flex-1 truncate text-xs">{ep.url}</code>
                                     <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => copy(ep.url)}>

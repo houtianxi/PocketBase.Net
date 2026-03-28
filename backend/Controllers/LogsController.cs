@@ -13,14 +13,14 @@ public class LogsController(AppDbContext db) : ControllerBase
     [HttpGet]
     public async Task<ActionResult<object>> List(
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 50,
+        [FromQuery] int perPage = 50,
         [FromQuery] string? search = null,
         [FromQuery] string? action = null,
         [FromQuery] string? level = null,
         [FromQuery] string? sort = "-created")
     {
         page = Math.Max(1, page);
-        pageSize = Math.Clamp(pageSize, 1, 200);
+        perPage = Math.Clamp(perPage, 1, 200);
 
         var query = db.AuditLogs.AsQueryable();
 
@@ -48,8 +48,8 @@ public class LogsController(AppDbContext db) : ControllerBase
             : query.OrderBy(x => x.CreatedAt);
 
         var items = await query
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+            .Skip((page - 1) * perPage)
+            .Take(perPage)
             .Select(x => new
             {
                 x.Id,
@@ -65,9 +65,9 @@ public class LogsController(AppDbContext db) : ControllerBase
         return Ok(new
         {
             page,
-            pageSize,
+            perPage,
             totalItems = total,
-            totalPages = (total + pageSize - 1) / pageSize,
+            totalPages = (total + perPage - 1) / perPage,
             items
         });
     }

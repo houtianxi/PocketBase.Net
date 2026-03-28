@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using PocketbaseNet.Api.Contracts;
 using PocketbaseNet.Api.Domain.Entities;
 using PocketbaseNet.Api.Infrastructure.Auth;
+using PocketbaseNet.Api.Infrastructure.Exceptions;
 
 namespace PocketbaseNet.Api.Controllers;
 
@@ -20,7 +21,7 @@ public class AuthController(
         var exists = await userManager.FindByEmailAsync(request.Email);
         if (exists is not null)
         {
-            return Conflict(new { message = "Email already exists" });
+            throw new ConflictException("Email already registered");
         }
 
         var user = new AppUser
@@ -34,7 +35,10 @@ public class AuthController(
         var createResult = await userManager.CreateAsync(user, request.Password);
         if (!createResult.Succeeded)
         {
-            return BadRequest(new { message = "Register failed", errors = createResult.Errors.Select(e => e.Description) });
+            throw new ValidationException("Registration failed", new()
+            {
+                { "password", createResult.Errors.Select(e => e.Description).ToList() }
+            });
         }
 
         await userManager.AddToRoleAsync(user, "User");
@@ -49,13 +53,13 @@ public class AuthController(
         var user = await userManager.FindByEmailAsync(request.Email);
         if (user is null || !user.IsActive)
         {
-            return Unauthorized(new { message = "Invalid credentials" });
+            throw new ApiException("Invalid email or password", 401);
         }
 
         var check = await signInManager.CheckPasswordSignInAsync(user, request.Password, true);
         if (!check.Succeeded)
         {
-            return Unauthorized(new { message = "Invalid credentials" });
+            throw new ApiException("Invalid email or password", 401);
         }
 
         var roles = await userManager.GetRolesAsync(user);
@@ -70,13 +74,13 @@ public class AuthController(
         var email = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Email)?.Value;
         if (string.IsNullOrWhiteSpace(email))
         {
-            return Unauthorized();
+            throw new ApiException("Unauthorized", 401);
         }
 
         var user = await userManager.FindByEmailAsync(email);
         if (user is null)
         {
-            return Unauthorized();
+            throw new ApiException("Unauthorized", 401);
         }
 
         var roles = await userManager.GetRolesAsync(user);
@@ -97,17 +101,56 @@ public class AuthController(
         var email = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Email)?.Value;
         if (string.IsNullOrWhiteSpace(email))
         {
-            return Unauthorized();
+            throw new ApiException("Unauthorized", 401);
         }
 
         var user = await userManager.FindByEmailAsync(email);
         if (user is null)
         {
-            return Unauthorized();
+            throw new ApiException("Unauthorized", 401);
         }
 
         var roles = await userManager.GetRolesAsync(user);
         var token = await jwtTokenService.CreateAccessTokenAsync(user);
         return Ok(new AuthResponse(token, user.Id, user.Email ?? string.Empty, user.DisplayName, roles.ToArray()));
+    }
+
+    [Authorize]
+    [HttpPost("change-password")]
+    public async Task<ActionResult> ChangePassword(ChangePasswordRequest request)
+    {
+        var email = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Email)?.Value;
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            throw new ApiException("Unauthorized", 401);
+        }
+
+        var user = await userManager.FindByEmailAsync(email);
+        if (user is null)
+        {
+            throw new ApiException("Unauthorized", 401);
+        }
+
+        // Verify old password
+        var oldPwdCheck = await signInManager.CheckPasswordSignInAsync(user, request.OldPassword, false);
+        if (!oldPwdCheck.Succeeded)
+        {
+            throw new ValidationException("Current password is incorrect", new()
+            {
+                { "oldPassword", new() { "Current password is incorrect" } }
+            });
+        }
+
+        // Change password
+        var changeResult = await userManager.ChangePasswordAsync(user, request.OldPassword, request.NewPassword);
+        if (!changeResult.Succeeded)
+        {
+            throw new ValidationException("Password change failed", new()
+            {
+                { "password", changeResult.Errors.Select(e => e.Description).ToList() }
+            });
+        }
+
+        return Ok(new { message = "Password changed successfully" });
     }
 }

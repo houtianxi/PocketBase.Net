@@ -61,6 +61,17 @@ public class FieldService
         if (!IsValidFieldName(request.Name))
             throw new InvalidOperationException("Invalid field name. Use alphanumeric and underscore only.");
 
+        // Determine the correct display order
+        // If DisplayOrder is 0 or not explicitly provided, place the new field at the end
+        var displayOrder = request.DisplayOrder;
+        if (displayOrder == 0)
+        {
+            var maxOrder = await _db.Fields
+                .Where(f => f.CollectionDefinitionId == collectionId)
+                .MaxAsync(f => (int?)f.DisplayOrder) ?? -1;
+            displayOrder = maxOrder + 1;
+        }
+
         var field = new Field
         {
             CollectionDefinitionId = collectionId,
@@ -72,7 +83,7 @@ public class FieldService
             DefaultValue = request.DefaultValue,
             Config = string.IsNullOrWhiteSpace(request.Config) ? JsonDocument.Parse("{}").RootElement : JsonDocument.Parse(request.Config).RootElement,
             ValidationRules = request.ValidationRules,
-            DisplayOrder = request.DisplayOrder,
+            DisplayOrder = displayOrder,
             Description = request.Description,
             IsSystem = false
         };
@@ -248,35 +259,35 @@ public class FieldService
                 "Text",
                 "Single line text",
                 false, false, true,
-                new[] { "minLength", "maxLength", "pattern" }
+                new[] { "minLength", "maxLength", "pattern", "displayInRelation" }
             ),
             new FieldTypeDefinition(
                 FieldType.Email,
                 "Email",
                 "Email field with validation",
                 false, false, true,
-                new[] { "pattern" }
+                new[] { "pattern", "displayInRelation" }
             ),
             new FieldTypeDefinition(
                 FieldType.Url,
                 "URL",
                 "URL field with validation",
                 false, false, true,
-                new[] { "pattern" }
+                new[] { "pattern", "displayInRelation" }
             ),
             new FieldTypeDefinition(
                 FieldType.Number,
                 "Number",
                 "Numeric field (integer or decimal)",
                 false, false, true,
-                new[] { "min", "max", "step", "precision" }
+                new[] { "min", "max", "step", "precision", "displayInRelation" }
             ),
             new FieldTypeDefinition(
                 FieldType.Checkbox,
                 "Checkbox",
                 "Boolean checkbox field",
                 false, false, false,
-                new string[] { }
+                new[] { "defaultValue", "displayInRelation" }
             ),
             new FieldTypeDefinition(
                 FieldType.Date,
@@ -297,14 +308,14 @@ public class FieldService
                 "Select",
                 "Single select from predefined options",
                 true, false, false,
-                new[] { "values", "maxSelect" }
+                new[] { "values", "maxSelect", "defaultValue", "displayInRelation" }
             ),
             new FieldTypeDefinition(
                 FieldType.Relation,
                 "Relation",
                 "Relation to another collection",
                 false, true, false,
-                new[] { "collectionId", "relationType" }
+                new[] { "collectionId", "relationType", "displayInRelation" }
             ),
             new FieldTypeDefinition(
                 FieldType.User,
@@ -325,7 +336,7 @@ public class FieldService
                 "Textarea",
                 "Multi-line text field",
                 false, false, true,
-                new[] { "minLength", "maxLength" }
+                new[] { "minLength", "maxLength", "displayInRelation" }
             ),
             new FieldTypeDefinition(
                 FieldType.Json,

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Database, Users, BarChart2, X, Search, Plus, FolderOpen, ShoppingCart } from 'lucide-react';
+import { Database, Users, BarChart2, X, Search, Plus, FolderOpen, ShoppingCart, Presentation } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -10,13 +10,14 @@ interface SidebarProps {
     selectedId: string | null;
     onSelect: (col: CollectionItem) => void;
     onNewCollection: () => void;
-    activeSection: 'collections' | 'users' | 'logs' | 'order-demo';
-    onSectionChange: (s: 'collections' | 'users' | 'logs' | 'order-demo') => void;
+    activeSection: 'collections' | 'users' | 'logs' | 'order-demo' | 'gate-mode3';
+    onSectionChange: (s: 'collections' | 'users' | 'logs' | 'order-demo' | 'gate-mode3') => void;
 }
 
 const navItems = [
     { key: 'collections' as const, icon: Database, label: 'Collections' },
     { key: 'order-demo' as const, icon: ShoppingCart, label: 'Order Demo' },
+    { key: 'gate-mode3' as const, icon: Presentation, label: 'Gate Mode3' },
     { key: 'users' as const, icon: Users, label: 'Users' },
     { key: 'logs' as const, icon: BarChart2, label: 'Logs' },
 ];
@@ -29,7 +30,7 @@ export function Sidebar({ collections, selectedId, onSelect, onNewCollection, ac
     );
 
     return (
-        <div className="flex h-full w-[224px] min-w-[224px] flex-col border-r bg-background/95 backdrop-blur">
+        <div className="flex h-full w-56 min-w-56 flex-col border-r bg-background/95 backdrop-blur">
             {/* Logo */}
             <div className="flex h-12 items-center gap-2 border-b px-3">
                 <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground text-xs font-bold">

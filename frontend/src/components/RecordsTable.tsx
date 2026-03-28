@@ -19,9 +19,40 @@ interface RecordsTableProps {
 }
 
 // Type for storing relation field lookup data
-type RelationLookup = Record<string, Record<string, string>>; // { collectionId: { recordId: displayName } }
+type RelationCardLine = { label: string; value: string };
+type RelationCardData = { title: string; lines: RelationCardLine[] };
+type RelationLookup = Record<string, Record<string, RelationCardData>>; // { collectionId: { recordId: details } }
 type UserLookup = Record<string, string>; // { userId: displayName/email }
 type FileMetadataMap = Record<string, FileMetadata>;
+
+function getFieldDisplayText(field: Pick<Field, 'name' | 'label' | 'description'>): string {
+    return field.description?.trim() || field.label?.trim() || field.name;
+}
+
+function parseFieldConfig(config: unknown): Record<string, unknown> {
+    try {
+        const parsed = typeof config === 'string' ? JSON.parse(config) : config;
+        if (parsed && typeof parsed === 'object') {
+            return parsed as Record<string, unknown>;
+        }
+    } catch {
+        // ignore parse errors and fallback to empty object
+    }
+    return {};
+}
+
+function relationValueToText(value: unknown): string {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'string') return value.trim();
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+    if (Array.isArray(value)) {
+        return value
+            .map(v => relationValueToText(v))
+            .filter(Boolean)
+            .join(' / ');
+    }
+    return '';
+}
 
 function getFieldValue(data: Record<string, unknown>, fieldName: string): unknown {
     if (Object.prototype.hasOwnProperty.call(data, fieldName)) {
@@ -99,10 +130,80 @@ function extractFileNames(value: unknown): string[] {
     return single ? [single] : [];
 }
 
+function RelationCardValue({ items }: { items: RelationCardData[] }) {
+    const [expanded, setExpanded] = useState(false);
+    const visibleItems = expanded ? items : items.slice(0, 1);
+    const hiddenCount = items.length - visibleItems.length;
+
+    return (
+        <div className="flex flex-col gap-1.5">
+            {visibleItems.map((item, i) => (
+                <div key={`${item.title}-${i}`} className={cn(
+                    "rounded-xl shadow-sm transition-all duration-150",
+                    "bg-gradient-to-br from-white via-white to-slate-50/70",
+                    "dark:from-slate-950 dark:via-slate-950 dark:to-slate-900/40",
+                    "hover:shadow-md"
+                )}>
+                    <div className="rounded-t-xl bg-white/95 px-3.5 py-1.5 dark:bg-slate-100/95">
+                        <div className="truncate text-[12px] font-semibold tracking-wide text-slate-800 dark:text-slate-900">{item.title}</div>
+                    </div>
+                    {item.lines.length > 0 ? (
+                        <div className="pb-2 pt-1">
+                            {item.lines.map((line, lineIndex) => (
+                                <div
+                                    key={`${line.label}-${lineIndex}`}
+                                    className={cn(
+                                        "grid grid-cols-[88px_1fr] items-start gap-2 px-3.5 py-0.5 text-[11px] leading-4",
+                                        lineIndex > 0 && ""
+                                    )}
+                                >
+                                    <span className="truncate text-left text-muted-foreground/80 font-medium">{line.label}:</span>
+                                    <span className="text-left text-foreground/90 break-words">{line.value}</span>
+                                </div>
+                            ))}
+                        </div>
+                    ) : null}
+                </div>
+            ))}
+
+            {hiddenCount > 0 ? (
+                <button
+                    type="button"
+                    className={cn(
+                        "w-fit rounded-full px-2.5 py-1 text-xs font-medium text-left",
+                        "bg-primary/10 dark:bg-primary/10 text-primary",
+                        "border border-primary/30 hover:border-primary/50",
+                        "transition-all hover:shadow-sm hover:bg-primary/15 cursor-pointer"
+                    )}
+                    onClick={e => {
+                        e.stopPropagation();
+                        setExpanded(true);
+                    }}
+                >
+                    + {hiddenCount} 条
+                </button>
+            ) : null}
+
+            {expanded && items.length > 1 ? (
+                <button
+                    type="button"
+                    className="w-fit rounded-full px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-all hover:underline"
+                    onClick={e => {
+                        e.stopPropagation();
+                        setExpanded(false);
+                    }}
+                >
+                    收起
+                </button>
+            ) : null}
+        </div>
+    );
+}
+
 function formatCellValue(
     value: unknown,
     fieldType?: FieldType,
-    relationLookup?: Record<string, string>,
+    relationLookup?: Record<string, RelationCardData>,
     userLookup?: UserLookup,
     fileMetadataMap?: FileMetadataMap,
 ): React.ReactNode {
@@ -114,29 +215,24 @@ function formatCellValue(
             </span>
         );
     }
-    // Handle Relation field type - show display name instead of GUID
+    // Handle Relation field type - show display name with modern card design
     if (fieldType === FieldType.Relation && relationLookup) {
         if (Array.isArray(value)) {
             // Multiple relations
-            const names = value.map(id => relationLookup[String(id)] || String(id).substring(0, 8));
-            if (names.length === 0) return <span className="text-muted-foreground italic">none</span>;
-            return (
-                <div className="flex flex-wrap gap-1">
-                    {names.slice(0, 3).map((name, i) => (
-                        <span key={i} className="inline-flex items-center rounded bg-secondary px-1.5 py-0.5 text-xs">{name}</span>
-                    ))}
-                    {names.length > 3 && <span className="text-xs text-muted-foreground">+{names.length - 3}</span>}
-                </div>
-            );
+            const items = value
+                .map(id => relationLookup[String(id)] || {
+                    title: String(id).substring(0, 8),
+                    lines: [],
+                })
+                .filter(Boolean);
+            if (items.length === 0) return <span className="text-muted-foreground italic">无</span>;
+            return <RelationCardValue items={items} />;
         } else {
             // Single relation
             const id = String(value);
-            const displayName = relationLookup[id];
-            if (displayName) {
-                return <span className="inline-flex items-center rounded bg-secondary px-1.5 py-0.5 text-xs">{displayName}</span>;
-            }
+            const item = relationLookup[id] || { title: id.substring(0, 8), lines: [] };
+            return <RelationCardValue items={[item]} />;
             // Fallback: show truncated GUID
-            return <span className="inline-flex items-center rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{id.substring(0, 8)}</span>;
         }
     }
     if (fieldType === FieldType.File) {
@@ -204,7 +300,7 @@ function formatDateTime(iso: string) {
 
 export function RecordsTable({ collection, schemaVersion = 0, onSettingsClick }: RecordsTableProps) {
     const [fields, setFields] = useState<Field[]>([]);
-    const [paged, setPaged] = useState<PagedRecordResponse>({ page: 1, pageSize: 20, totalItems: 0, totalPages: 0, items: [] });
+    const [paged, setPaged] = useState<PagedRecordResponse>({ page: 1, perPage: 20, totalItems: 0, totalPages: 0, items: [] });
     const [page, setPage] = useState(1);
     const [search, setSearch] = useState('');
     const [sort, setSort] = useState('-updated');
@@ -323,14 +419,15 @@ export function RecordsTable({ collection, schemaVersion = 0, onSettingsClick }:
                     const fieldsRes = await api.get<Field[]>(`/collections/${targetCollection.id}/fields`);
                     const collectionFields = fieldsRes.data.filter(f => !f.isSystem);
 
-                    // Find primary display field
-                    const primaryCandidates = ['name', 'title', 'label', '名称', '标题'];
-                    const textFieldTypes: number[] = [FieldType.Text, FieldType.Email, FieldType.Url, FieldType.Textarea];
-                    let primaryField = collectionFields.find(f => primaryCandidates.includes(f.name.toLowerCase()))?.name;
-                    if (!primaryField) {
-                        const textFields = collectionFields.filter(f => textFieldTypes.includes(f.type));
-                        if (textFields.length > 0) primaryField = textFields[0].name;
-                    }
+                    const displayInRelationFields = collectionFields.filter(f => {
+                        const config = parseFieldConfig(f.config);
+                        return config.displayInRelation === true;
+                    });
+
+                    // Keep cards informative even if no field was explicitly enabled.
+                    const renderFields = displayInRelationFields.length > 0
+                        ? displayInRelationFields
+                        : collectionFields.slice(0, 3);
 
                     // Load records from the target collection
                     const res = await api.get<{ items: Array<{ id: string; data: Record<string, unknown> }> }>(`/records/${targetCollection.slug}`, {
@@ -338,12 +435,32 @@ export function RecordsTable({ collection, schemaVersion = 0, onSettingsClick }:
                     });
 
                     // Build lookup map
-                    const fieldLookup: Record<string, string> = {};
+                    const fieldLookup: Record<string, RelationCardData> = {};
                     for (const item of res.data.items) {
-                        const displayName = primaryField && item.data[primaryField]
-                            ? String(item.data[primaryField])
-                            : (item.data.name || item.data.title || item.data.label || item.id.substring(0, 8)) as string;
-                        fieldLookup[item.id] = displayName;
+                        const lines = renderFields
+                            .map(rf => {
+                                const raw = getFieldValue(item.data, rf.name);
+                                const text = relationValueToText(raw);
+                                if (!text) return null;
+                                return {
+                                    label: getFieldDisplayText(rf),
+                                    value: text,
+                                };
+                            })
+                            .filter((line): line is RelationCardLine => Boolean(line));
+
+                        const title = lines[0]?.value
+                            || relationValueToText(item.data.name)
+                            || relationValueToText(item.data.title)
+                            || relationValueToText(item.data.label)
+                            || item.id.substring(0, 8);
+
+                        const detailLines = lines.length > 0 ? lines.slice(1) : [];
+
+                        fieldLookup[item.id] = {
+                            title,
+                            lines: detailLines,
+                        };
                     }
 
                     lookups[relConfig.collectionId] = fieldLookup;
@@ -379,7 +496,7 @@ export function RecordsTable({ collection, schemaVersion = 0, onSettingsClick }:
 
     // Create a map from field name to its relation lookup
     const fieldRelationLookups = useMemo(() => {
-        const map: Record<string, Record<string, string>> = {};
+        const map: Record<string, Record<string, RelationCardData>> = {};
         for (const field of fields) {
             if (field.type === FieldType.Relation) {
                 let relConfig = { collectionId: '' };

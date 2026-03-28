@@ -1,0 +1,3373 @@
+{
+  "slideWidth": 12190413,
+  "slideHeight": 6858000,
+  "slides": [
+    {
+      "index": 1,
+      "elements": [
+        {
+          "type": "shape",
+          "x": 2440941,
+          "w": 8599905,
+          "y": 6207919,
+          "h": 590550,
+          "geometry": "rect",
+          "name": "Footer Placeholder 4"
+        },
+        {
+          "type": "shape",
+          "x": 273808,
+          "w": 1162800,
+          "y": 6489341,
+          "h": 118192,
+          "geometry": "rect",
+          "name": "Date Placeholder 3"
+        },
+        {
+          "type": "shape",
+          "x": 277019,
+          "w": 11629133,
+          "y": 1816571,
+          "h": 4096800,
+          "geometry": "rect",
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 2"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 11626834,
+          "y": 622789,
+          "h": 410899,
+          "geometry": "rect",
+          "text": "Click to edit Master title style",
+          "fontSizePt": 18.0,
+          "name": "Title Placeholder 1"
+        },
+        {
+          "type": "shape",
+          "x": 1739366,
+          "w": 676800,
+          "y": 6473853,
+          "h": 132744,
+          "geometry": "rect",
+          "text": "Slide ",
+          "fontSizePt": 18.0,
+          "name": "Slide Number Placeholder 5"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 327600,
+          "y": 519805,
+          "h": 39600,
+          "geometry": "rect",
+          "name": "Rectangle 44"
+        },
+        {
+          "type": "shape",
+          "x": 61913,
+          "w": 828675,
+          "y": 5218113,
+          "h": 820737,
+          "name": "Freeform 16"
+        },
+        {
+          "type": "shape",
+          "x": 957263,
+          "w": 773112,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 17"
+        },
+        {
+          "type": "shape",
+          "x": 1819275,
+          "w": 622300,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 18"
+        },
+        {
+          "type": "shape",
+          "x": 2573338,
+          "w": 627062,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 19"
+        },
+        {
+          "type": "image",
+          "src": "/gate3-assets/image1.emf",
+          "x": 11403849,
+          "w": 504523,
+          "y": 6397296,
+          "h": 195001,
+          "geometry": "rect"
+        },
+        {
+          "type": "shape",
+          "x": 277167,
+          "w": 11629504,
+          "y": 4539037,
+          "h": 147520,
+          "text": "Click to edit Master text styles",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 17"
+        },
+        {
+          "type": "shape",
+          "x": 277166,
+          "w": 11629504,
+          "y": 4724365,
+          "h": 592406,
+          "text": "Click to edit Master title style",
+          "fontSizePt": 18.0,
+          "name": "Title 1"
+        },
+        {
+          "type": "shape",
+          "x": 277167,
+          "w": 11629504,
+          "y": 5449618,
+          "h": 287188,
+          "text": "Click to edit Master subtitle style",
+          "fontSizePt": 18.0,
+          "name": "Subtitle 2"
+        },
+        {
+          "type": "shape",
+          "x": 277167,
+          "w": 11629504,
+          "y": 6094136,
+          "h": 216000,
+          "text": "Click to edit Master text styles",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 19"
+        },
+        {
+          "type": "image",
+          "src": "/gate3-assets/notesSlide1.xml",
+          "x": 11007585,
+          "w": 896803,
+          "y": 361851,
+          "h": 350784,
+          "geometry": "rect"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 327600,
+          "y": 519805,
+          "h": 39600,
+          "geometry": "rect",
+          "name": "Rectangle 9"
+        },
+        {
+          "type": "shape",
+          "x": 277167,
+          "w": 11629504,
+          "y": 6094136,
+          "h": 216000,
+          "text": "CN IS Application build team",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 8"
+        },
+        {
+          "type": "image",
+          "src": "/gate3-assets/image3.jpeg",
+          "x": 0,
+          "w": 12198350,
+          "y": 0,
+          "h": 6858000,
+          "geometry": "rect"
+        },
+        {
+          "type": "image",
+          "src": "/gate3-assets/image1.emf",
+          "x": 11007585,
+          "w": 896803,
+          "y": 361851,
+          "h": 350784,
+          "geometry": "rect"
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "elements": [
+        {
+          "type": "shape",
+          "x": 2440941,
+          "w": 8599905,
+          "y": 6207919,
+          "h": 590550,
+          "geometry": "rect",
+          "name": "Footer Placeholder 4"
+        },
+        {
+          "type": "shape",
+          "x": 273808,
+          "w": 1162800,
+          "y": 6489341,
+          "h": 118192,
+          "geometry": "rect",
+          "name": "Date Placeholder 3"
+        },
+        {
+          "type": "shape",
+          "x": 277019,
+          "w": 11629133,
+          "y": 1816571,
+          "h": 4096800,
+          "geometry": "rect",
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 2"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 11626834,
+          "y": 622789,
+          "h": 410899,
+          "geometry": "rect",
+          "text": "Click to edit Master title style",
+          "fontSizePt": 18.0,
+          "name": "Title Placeholder 1"
+        },
+        {
+          "type": "shape",
+          "x": 1739366,
+          "w": 676800,
+          "y": 6473853,
+          "h": 132744,
+          "geometry": "rect",
+          "text": "Slide ",
+          "fontSizePt": 18.0,
+          "name": "Slide Number Placeholder 5"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 327600,
+          "y": 519805,
+          "h": 39600,
+          "geometry": "rect",
+          "name": "Rectangle 44"
+        },
+        {
+          "type": "shape",
+          "x": 61913,
+          "w": 828675,
+          "y": 5218113,
+          "h": 820737,
+          "name": "Freeform 16"
+        },
+        {
+          "type": "shape",
+          "x": 957263,
+          "w": 773112,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 17"
+        },
+        {
+          "type": "shape",
+          "x": 1819275,
+          "w": 622300,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 18"
+        },
+        {
+          "type": "shape",
+          "x": 2573338,
+          "w": 627062,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 19"
+        },
+        {
+          "type": "image",
+          "src": "/gate3-assets/image1.emf",
+          "x": 11403849,
+          "w": 504523,
+          "y": 6397296,
+          "h": 195001,
+          "geometry": "rect"
+        },
+        {
+          "type": "shape",
+          "x": 275542,
+          "w": 11630692,
+          "y": 1819425,
+          "h": 4093946,
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 4"
+        },
+        {
+          "type": "shape",
+          "x": 283258,
+          "w": 11630692,
+          "y": 1313478,
+          "h": 4231043,
+          "text": "Project Update \nGate 3 Check list\nGate 3 Decision",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 1"
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "elements": [
+        {
+          "type": "shape",
+          "x": 2440941,
+          "w": 8599905,
+          "y": 6207919,
+          "h": 590550,
+          "geometry": "rect",
+          "name": "Footer Placeholder 4"
+        },
+        {
+          "type": "shape",
+          "x": 273808,
+          "w": 1162800,
+          "y": 6489341,
+          "h": 118192,
+          "geometry": "rect",
+          "name": "Date Placeholder 3"
+        },
+        {
+          "type": "shape",
+          "x": 277019,
+          "w": 11629133,
+          "y": 1816571,
+          "h": 4096800,
+          "geometry": "rect",
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 2"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 11626834,
+          "y": 622789,
+          "h": 410899,
+          "geometry": "rect",
+          "text": "Click to edit Master title style",
+          "fontSizePt": 18.0,
+          "name": "Title Placeholder 1"
+        },
+        {
+          "type": "shape",
+          "x": 1739366,
+          "w": 676800,
+          "y": 6473853,
+          "h": 132744,
+          "geometry": "rect",
+          "text": "Slide ",
+          "fontSizePt": 18.0,
+          "name": "Slide Number Placeholder 5"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 327600,
+          "y": 519805,
+          "h": 39600,
+          "geometry": "rect",
+          "name": "Rectangle 44"
+        },
+        {
+          "type": "shape",
+          "x": 61913,
+          "w": 828675,
+          "y": 5218113,
+          "h": 820737,
+          "name": "Freeform 16"
+        },
+        {
+          "type": "shape",
+          "x": 957263,
+          "w": 773112,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 17"
+        },
+        {
+          "type": "shape",
+          "x": 1819275,
+          "w": 622300,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 18"
+        },
+        {
+          "type": "shape",
+          "x": 2573338,
+          "w": 627062,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 19"
+        },
+        {
+          "type": "image",
+          "src": "/gate3-assets/image1.emf",
+          "x": 11403849,
+          "w": 504523,
+          "y": 6397296,
+          "h": 195001,
+          "geometry": "rect"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 11626834,
+          "y": 1120928,
+          "h": 504000,
+          "text": "Click to edit Master subtitle style",
+          "fontSizePt": 18.0,
+          "name": "Subtitle 2"
+        },
+        {
+          "type": "shape",
+          "x": 273061,
+          "w": 11626834,
+          "y": 918906,
+          "h": 504000,
+          "text": " ",
+          "fontSizePt": 18.0,
+          "name": "Subtitle 6"
+        },
+        {
+          "type": "shape",
+          "x": 290518,
+          "w": 11626834,
+          "y": 568826,
+          "h": 410899,
+          "text": "Project Update",
+          "fontSizePt": 18.0,
+          "name": "Title 5"
+        },
+        {
+          "type": "shape",
+          "x": 6303928,
+          "w": 2899873,
+          "y": 2117766,
+          "h": 3475267,
+          "geometry": "rect",
+          "text": "供应商主数据\n供应商---物料对应关系 \n图纸查询\nBOM查询\nNCR\nPO协同\nPO收货\nPO Confirmation",
+          "fontSizePt": 12.0,
+          "name": "Text Placeholder 5"
+        },
+        {
+          "type": "shape",
+          "x": 272230,
+          "w": 2781866,
+          "y": 1601649,
+          "h": 379016,
+          "geometry": "rect",
+          "text": "Scope list",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 7"
+        }
+      ]
+    },
+    {
+      "index": 4,
+      "elements": [
+        {
+          "type": "shape",
+          "x": 2440941,
+          "w": 8599905,
+          "y": 6207919,
+          "h": 590550,
+          "geometry": "rect",
+          "name": "Footer Placeholder 4"
+        },
+        {
+          "type": "shape",
+          "x": 273808,
+          "w": 1162800,
+          "y": 6489341,
+          "h": 118192,
+          "geometry": "rect",
+          "name": "Date Placeholder 3"
+        },
+        {
+          "type": "shape",
+          "x": 277019,
+          "w": 11629133,
+          "y": 1816571,
+          "h": 4096800,
+          "geometry": "rect",
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 2"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 11626834,
+          "y": 622789,
+          "h": 410899,
+          "geometry": "rect",
+          "text": "Click to edit Master title style",
+          "fontSizePt": 18.0,
+          "name": "Title Placeholder 1"
+        },
+        {
+          "type": "shape",
+          "x": 1739366,
+          "w": 676800,
+          "y": 6473853,
+          "h": 132744,
+          "geometry": "rect",
+          "text": "Slide ",
+          "fontSizePt": 18.0,
+          "name": "Slide Number Placeholder 5"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 327600,
+          "y": 519805,
+          "h": 39600,
+          "geometry": "rect",
+          "name": "Rectangle 44"
+        },
+        {
+          "type": "shape",
+          "x": 61913,
+          "w": 828675,
+          "y": 5218113,
+          "h": 820737,
+          "name": "Freeform 16"
+        },
+        {
+          "type": "shape",
+          "x": 957263,
+          "w": 773112,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 17"
+        },
+        {
+          "type": "shape",
+          "x": 1819275,
+          "w": 622300,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 18"
+        },
+        {
+          "type": "shape",
+          "x": 2573338,
+          "w": 627062,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 19"
+        },
+        {
+          "type": "image",
+          "src": "/gate3-assets/image1.emf",
+          "x": 11403849,
+          "w": 504523,
+          "y": 6397296,
+          "h": 195001,
+          "geometry": "rect"
+        },
+        {
+          "type": "shape",
+          "x": 330656,
+          "w": 11529099,
+          "y": 586253,
+          "h": 367200,
+          "text": "Project Update",
+          "fontSizePt": 18.0,
+          "name": "Title 1"
+        },
+        {
+          "type": "shape",
+          "x": 331157,
+          "w": 11529099,
+          "y": 5634000,
+          "h": 540000,
+          "text": "Click to edit Master text styles",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 9"
+        },
+        {
+          "type": "shape",
+          "x": 8253491,
+          "w": 2787356,
+          "y": 2431867,
+          "h": 3193962,
+          "geometry": "rect",
+          "text": "附件安全性\nAntivirus Automation for Azure Storage\n支持附件类型：PDF、Office文档，TXT,图片(JPG,PNG,BPM)",
+          "fontSizePt": 11.0,
+          "name": "Content Placeholder 8"
+        },
+        {
+          "type": "shape",
+          "x": 331746,
+          "w": 11528510,
+          "y": 998098,
+          "h": 486000,
+          "text": "Solution update",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 3"
+        },
+        {
+          "type": "shape",
+          "x": 847330,
+          "w": 3139874,
+          "y": 2431867,
+          "h": 2692091,
+          "text": " 客户端支持\nIE11、Edge\nFirefox（last 2 versions）\nChrome （last 2 versions）\nSafari（last 2 versions）\nQQ浏览器、360浏览器 ",
+          "fontSizePt": 12.0,
+          "name": "Content Placeholder 2"
+        },
+        {
+          "type": "shape",
+          "x": 846240,
+          "w": 2451230,
+          "y": 1997049,
+          "h": 253592,
+          "text": "客户端支持",
+          "fontSizePt": 18.0,
+          "name": "Content Placeholder 9"
+        },
+        {
+          "type": "shape",
+          "x": 8253490,
+          "w": 2807600,
+          "y": 1997049,
+          "h": 253592,
+          "geometry": "rect",
+          "text": "附件安全",
+          "fontSizePt": 18.0,
+          "name": "Content Placeholder 10"
+        }
+      ]
+    },
+    {
+      "index": 5,
+      "elements": [
+        {
+          "type": "shape",
+          "x": 2440941,
+          "w": 8599905,
+          "y": 6207919,
+          "h": 590550,
+          "geometry": "rect",
+          "name": "Footer Placeholder 4"
+        },
+        {
+          "type": "shape",
+          "x": 273808,
+          "w": 1162800,
+          "y": 6489341,
+          "h": 118192,
+          "geometry": "rect",
+          "name": "Date Placeholder 3"
+        },
+        {
+          "type": "shape",
+          "x": 277019,
+          "w": 11629133,
+          "y": 1816571,
+          "h": 4096800,
+          "geometry": "rect",
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 2"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 11626834,
+          "y": 622789,
+          "h": 410899,
+          "geometry": "rect",
+          "text": "Click to edit Master title style",
+          "fontSizePt": 18.0,
+          "name": "Title Placeholder 1"
+        },
+        {
+          "type": "shape",
+          "x": 1739366,
+          "w": 676800,
+          "y": 6473853,
+          "h": 132744,
+          "geometry": "rect",
+          "text": "Slide ",
+          "fontSizePt": 18.0,
+          "name": "Slide Number Placeholder 5"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 327600,
+          "y": 519805,
+          "h": 39600,
+          "geometry": "rect",
+          "name": "Rectangle 44"
+        },
+        {
+          "type": "shape",
+          "x": 61913,
+          "w": 828675,
+          "y": 5218113,
+          "h": 820737,
+          "name": "Freeform 16"
+        },
+        {
+          "type": "shape",
+          "x": 957263,
+          "w": 773112,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 17"
+        },
+        {
+          "type": "shape",
+          "x": 1819275,
+          "w": 622300,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 18"
+        },
+        {
+          "type": "shape",
+          "x": 2573338,
+          "w": 627062,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 19"
+        },
+        {
+          "type": "image",
+          "src": "/gate3-assets/image1.emf",
+          "x": 11403849,
+          "w": 504523,
+          "y": 6397296,
+          "h": 195001,
+          "geometry": "rect"
+        },
+        {
+          "type": "shape",
+          "x": 331157,
+          "w": 11529099,
+          "y": 691200,
+          "h": 367200,
+          "text": "Click to edit Master title style",
+          "fontSizePt": 18.0,
+          "name": "Title 1"
+        },
+        {
+          "type": "shape",
+          "x": 331157,
+          "w": 11529099,
+          "y": 5634000,
+          "h": 540000,
+          "text": "Click to edit Master text styles",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 9"
+        },
+        {
+          "type": "shape",
+          "x": 6202554,
+          "w": 5657702,
+          "y": 1929600,
+          "h": 253592,
+          "text": "Click to edit Master text styles",
+          "fontSizePt": 18.0,
+          "name": "Content Placeholder 8"
+        },
+        {
+          "type": "shape",
+          "x": 331157,
+          "w": 11529099,
+          "y": 593920,
+          "h": 367200,
+          "text": "Project Update",
+          "fontSizePt": 18.0,
+          "name": "Title 4"
+        },
+        {
+          "type": "shape",
+          "x": 331745,
+          "w": 11528510,
+          "y": 1008858,
+          "h": 486000,
+          "text": "Go live Scope By Phase",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 5"
+        },
+        {
+          "type": "shape",
+          "x": 331156,
+          "w": 5657702,
+          "y": 1537407,
+          "h": 253559,
+          "text": "Phase I Scope",
+          "fontSizePt": 18.0,
+          "name": "Content Placeholder 10"
+        },
+        {
+          "type": "shape",
+          "x": 6202554,
+          "w": 5657702,
+          "y": 1537407,
+          "h": 253559,
+          "text": "Phase II Scope",
+          "fontSizePt": 18.0,
+          "name": "Content Placeholder 11"
+        }
+      ]
+    },
+    {
+      "index": 6,
+      "elements": [
+        {
+          "type": "shape",
+          "x": 2440941,
+          "w": 8599905,
+          "y": 6207919,
+          "h": 590550,
+          "geometry": "rect",
+          "name": "Footer Placeholder 4"
+        },
+        {
+          "type": "shape",
+          "x": 273808,
+          "w": 1162800,
+          "y": 6489341,
+          "h": 118192,
+          "geometry": "rect",
+          "name": "Date Placeholder 3"
+        },
+        {
+          "type": "shape",
+          "x": 277019,
+          "w": 11629133,
+          "y": 1816571,
+          "h": 4096800,
+          "geometry": "rect",
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 2"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 11626834,
+          "y": 622789,
+          "h": 410899,
+          "geometry": "rect",
+          "text": "Click to edit Master title style",
+          "fontSizePt": 18.0,
+          "name": "Title Placeholder 1"
+        },
+        {
+          "type": "shape",
+          "x": 1739366,
+          "w": 676800,
+          "y": 6473853,
+          "h": 132744,
+          "geometry": "rect",
+          "text": "Slide ",
+          "fontSizePt": 18.0,
+          "name": "Slide Number Placeholder 5"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 327600,
+          "y": 519805,
+          "h": 39600,
+          "geometry": "rect",
+          "name": "Rectangle 44"
+        },
+        {
+          "type": "shape",
+          "x": 61913,
+          "w": 828675,
+          "y": 5218113,
+          "h": 820737,
+          "name": "Freeform 16"
+        },
+        {
+          "type": "shape",
+          "x": 957263,
+          "w": 773112,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 17"
+        },
+        {
+          "type": "shape",
+          "x": 1819275,
+          "w": 622300,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 18"
+        },
+        {
+          "type": "shape",
+          "x": 2573338,
+          "w": 627062,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 19"
+        },
+        {
+          "type": "image",
+          "src": "/gate3-assets/image1.emf",
+          "x": 11403849,
+          "w": 504523,
+          "y": 6397296,
+          "h": 195001,
+          "geometry": "rect"
+        },
+        {
+          "type": "shape",
+          "x": 277019,
+          "w": 11629215,
+          "y": 1816571,
+          "h": 4096868,
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 4"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 11626834,
+          "y": 1120928,
+          "h": 504000,
+          "text": "Click to edit Master subtitle style",
+          "fontSizePt": 18.0,
+          "name": "Subtitle 2"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 11626834,
+          "y": 622789,
+          "h": 410899,
+          "text": "Click to edit Master title style",
+          "fontSizePt": 18.0,
+          "name": "Title 1"
+        },
+        {
+          "type": "shape",
+          "x": 273808,
+          "w": 11626834,
+          "y": 558333,
+          "h": 410899,
+          "text": "Project Update",
+          "fontSizePt": 18.0,
+          "name": "Title 6"
+        },
+        {
+          "type": "shape",
+          "x": 6047861,
+          "w": 5805436,
+          "y": 5529711,
+          "h": 396000,
+          "geometry": "rect",
+          "text": " Involve BPM  in integration test. Involve end users of each process role in UAT.",
+          "fontSizePt": 12.0,
+          "textColor": "#333333",
+          "name": "TextBox 7"
+        },
+        {
+          "type": "shape",
+          "x": 324787,
+          "w": 11528510,
+          "y": 890151,
+          "h": 410899,
+          "geometry": "rect",
+          "text": "Schedule plan",
+          "fontSizePt": 24.0,
+          "name": "Text Placeholder 9"
+        },
+        {
+          "type": "image",
+          "src": "/gate3-assets/image4.png",
+          "x": 673674,
+          "w": 5081615,
+          "y": 1411361,
+          "h": 4556488,
+          "geometry": "rect"
+        }
+      ]
+    },
+    {
+      "index": 7,
+      "elements": [
+        {
+          "type": "shape",
+          "x": 2440941,
+          "w": 8599905,
+          "y": 6207919,
+          "h": 590550,
+          "geometry": "rect",
+          "name": "Footer Placeholder 4"
+        },
+        {
+          "type": "shape",
+          "x": 273808,
+          "w": 1162800,
+          "y": 6489341,
+          "h": 118192,
+          "geometry": "rect",
+          "name": "Date Placeholder 3"
+        },
+        {
+          "type": "shape",
+          "x": 277019,
+          "w": 11629133,
+          "y": 1816571,
+          "h": 4096800,
+          "geometry": "rect",
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 2"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 11626834,
+          "y": 622789,
+          "h": 410899,
+          "geometry": "rect",
+          "text": "Click to edit Master title style",
+          "fontSizePt": 18.0,
+          "name": "Title Placeholder 1"
+        },
+        {
+          "type": "shape",
+          "x": 1739366,
+          "w": 676800,
+          "y": 6473853,
+          "h": 132744,
+          "geometry": "rect",
+          "text": "Slide ",
+          "fontSizePt": 18.0,
+          "name": "Slide Number Placeholder 5"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 327600,
+          "y": 519805,
+          "h": 39600,
+          "geometry": "rect",
+          "name": "Rectangle 44"
+        },
+        {
+          "type": "shape",
+          "x": 61913,
+          "w": 828675,
+          "y": 5218113,
+          "h": 820737,
+          "name": "Freeform 16"
+        },
+        {
+          "type": "shape",
+          "x": 957263,
+          "w": 773112,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 17"
+        },
+        {
+          "type": "shape",
+          "x": 1819275,
+          "w": 622300,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 18"
+        },
+        {
+          "type": "shape",
+          "x": 2573338,
+          "w": 627062,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 19"
+        },
+        {
+          "type": "image",
+          "src": "/gate3-assets/image1.emf",
+          "x": 11403849,
+          "w": 504523,
+          "y": 6397296,
+          "h": 195001,
+          "geometry": "rect"
+        },
+        {
+          "type": "shape",
+          "x": 331157,
+          "w": 11529099,
+          "y": 691200,
+          "h": 367200,
+          "text": "Click to edit Master title style",
+          "fontSizePt": 18.0,
+          "name": "Title 1"
+        },
+        {
+          "type": "shape",
+          "x": 331156,
+          "w": 11528510,
+          "y": 1929600,
+          "h": 4248150,
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Content Placeholder 8"
+        },
+        {
+          "type": "shape",
+          "x": 331745,
+          "w": 11528510,
+          "y": 914638,
+          "h": 474255,
+          "text": "Test plan",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 9"
+        },
+        {
+          "type": "shape",
+          "x": 273808,
+          "w": 11529099,
+          "y": 564234,
+          "h": 367200,
+          "text": "Project Update",
+          "fontSizePt": 18.0,
+          "name": "Title 8"
+        }
+      ]
+    },
+    {
+      "index": 8,
+      "elements": [
+        {
+          "type": "shape",
+          "x": 2440941,
+          "w": 8599905,
+          "y": 6207919,
+          "h": 590550,
+          "geometry": "rect",
+          "name": "Footer Placeholder 4"
+        },
+        {
+          "type": "shape",
+          "x": 273808,
+          "w": 1162800,
+          "y": 6489341,
+          "h": 118192,
+          "geometry": "rect",
+          "name": "Date Placeholder 3"
+        },
+        {
+          "type": "shape",
+          "x": 277019,
+          "w": 11629133,
+          "y": 1816571,
+          "h": 4096800,
+          "geometry": "rect",
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 2"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 11626834,
+          "y": 622789,
+          "h": 410899,
+          "geometry": "rect",
+          "text": "Click to edit Master title style",
+          "fontSizePt": 18.0,
+          "name": "Title Placeholder 1"
+        },
+        {
+          "type": "shape",
+          "x": 1739366,
+          "w": 676800,
+          "y": 6473853,
+          "h": 132744,
+          "geometry": "rect",
+          "text": "Slide ",
+          "fontSizePt": 18.0,
+          "name": "Slide Number Placeholder 5"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 327600,
+          "y": 519805,
+          "h": 39600,
+          "geometry": "rect",
+          "name": "Rectangle 44"
+        },
+        {
+          "type": "shape",
+          "x": 61913,
+          "w": 828675,
+          "y": 5218113,
+          "h": 820737,
+          "name": "Freeform 16"
+        },
+        {
+          "type": "shape",
+          "x": 957263,
+          "w": 773112,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 17"
+        },
+        {
+          "type": "shape",
+          "x": 1819275,
+          "w": 622300,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 18"
+        },
+        {
+          "type": "shape",
+          "x": 2573338,
+          "w": 627062,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 19"
+        },
+        {
+          "type": "image",
+          "src": "/gate3-assets/image1.emf",
+          "x": 11403849,
+          "w": 504523,
+          "y": 6397296,
+          "h": 195001,
+          "geometry": "rect"
+        },
+        {
+          "type": "shape",
+          "x": 331157,
+          "w": 11529099,
+          "y": 572936,
+          "h": 367200,
+          "text": "Project Update",
+          "fontSizePt": 18.0,
+          "name": "Title 1"
+        },
+        {
+          "type": "shape",
+          "x": 331157,
+          "w": 11529099,
+          "y": 5634000,
+          "h": 540000,
+          "text": "Click to edit Master text styles",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 9"
+        },
+        {
+          "type": "shape",
+          "x": 6202554,
+          "w": 5657702,
+          "y": 1929600,
+          "h": 253592,
+          "text": "Click to edit Master text styles",
+          "fontSizePt": 18.0,
+          "name": "Content Placeholder 8"
+        },
+        {
+          "type": "shape",
+          "x": 337521,
+          "w": 11528510,
+          "y": 1057498,
+          "h": 486000,
+          "text": "Cost update",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 3"
+        },
+        {
+          "type": "shape",
+          "x": 331157,
+          "w": 5657701,
+          "y": 2317637,
+          "h": 3193962,
+          "text": "Total cost:368,600 CNY\nApplication delivery is 87 man-day, 217,500 CNY\nProject management is 19 man-day, 47,500 CNY\nSAP delivery is man-day 35 man-day, 103,600 CNY\nBased on currently schedule, billing plan as below\n2023-03-15, 106 man-day, 265,000 CNY",
+          "fontSizePt": 18.0,
+          "name": "Content Placeholder 2"
+        },
+        {
+          "type": "shape",
+          "x": 6095206,
+          "w": 5765049,
+          "y": 2317637,
+          "h": 3405184,
+          "text": "IS consultancy  cost 40,000CNY. But there will be additional cost since we using Azure service, new web app need to setup and yearly cost is as below\n ",
+          "fontSizePt": 18.0,
+          "name": "Content Placeholder 10"
+        },
+        {
+          "type": "shape",
+          "x": 331157,
+          "w": 5657702,
+          "y": 1929600,
+          "h": 253592,
+          "text": "Project cost",
+          "fontSizePt": 18.0,
+          "name": "Content Placeholder 11"
+        },
+        {
+          "type": "shape",
+          "x": 6202554,
+          "w": 5657702,
+          "y": 1929600,
+          "h": 253592,
+          "text": "Operation cost",
+          "fontSizePt": 18.0,
+          "name": "Content Placeholder 12"
+        }
+      ]
+    },
+    {
+      "index": 9,
+      "elements": [
+        {
+          "type": "shape",
+          "x": 2440941,
+          "w": 8599905,
+          "y": 6207919,
+          "h": 590550,
+          "geometry": "rect",
+          "name": "Footer Placeholder 4"
+        },
+        {
+          "type": "shape",
+          "x": 273808,
+          "w": 1162800,
+          "y": 6489341,
+          "h": 118192,
+          "geometry": "rect",
+          "name": "Date Placeholder 3"
+        },
+        {
+          "type": "shape",
+          "x": 277019,
+          "w": 11629133,
+          "y": 1816571,
+          "h": 4096800,
+          "geometry": "rect",
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 2"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 11626834,
+          "y": 622789,
+          "h": 410899,
+          "geometry": "rect",
+          "text": "Click to edit Master title style",
+          "fontSizePt": 18.0,
+          "name": "Title Placeholder 1"
+        },
+        {
+          "type": "shape",
+          "x": 1739366,
+          "w": 676800,
+          "y": 6473853,
+          "h": 132744,
+          "geometry": "rect",
+          "text": "Slide ",
+          "fontSizePt": 18.0,
+          "name": "Slide Number Placeholder 5"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 327600,
+          "y": 519805,
+          "h": 39600,
+          "geometry": "rect",
+          "name": "Rectangle 44"
+        },
+        {
+          "type": "shape",
+          "x": 61913,
+          "w": 828675,
+          "y": 5218113,
+          "h": 820737,
+          "name": "Freeform 16"
+        },
+        {
+          "type": "shape",
+          "x": 957263,
+          "w": 773112,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 17"
+        },
+        {
+          "type": "shape",
+          "x": 1819275,
+          "w": 622300,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 18"
+        },
+        {
+          "type": "shape",
+          "x": 2573338,
+          "w": 627062,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 19"
+        },
+        {
+          "type": "image",
+          "src": "/gate3-assets/image1.emf",
+          "x": 11403849,
+          "w": 504523,
+          "y": 6397296,
+          "h": 195001,
+          "geometry": "rect"
+        },
+        {
+          "type": "shape",
+          "x": 332324,
+          "w": 11518500,
+          "y": 1931198,
+          "h": 3982245,
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Content Placeholder 8"
+        },
+        {
+          "type": "shape",
+          "x": 333221,
+          "w": 11518500,
+          "y": 682313,
+          "h": 396000,
+          "text": "Click to edit Master title style",
+          "fontSizePt": 18.0,
+          "name": "Title 2"
+        },
+        {
+          "type": "shape",
+          "x": 333221,
+          "w": 11518500,
+          "y": 1085213,
+          "h": 504000,
+          "text": "Click to edit Master subtitle style",
+          "fontSizePt": 18.0,
+          "name": "Subtitle 2"
+        },
+        {
+          "type": "shape",
+          "x": 333220,
+          "w": 11518500,
+          "y": 589993,
+          "h": 396000,
+          "text": "Project update",
+          "fontSizePt": 18.0,
+          "name": "Title 6"
+        },
+        {
+          "type": "shape",
+          "x": 342637,
+          "w": 11518500,
+          "y": 1019742,
+          "h": 395948,
+          "text": "Cost update",
+          "fontSizePt": 24.0,
+          "name": "Subtitle 7"
+        }
+      ]
+    },
+    {
+      "index": 10,
+      "elements": [
+        {
+          "type": "shape",
+          "x": 2440941,
+          "w": 8599905,
+          "y": 6207919,
+          "h": 590550,
+          "geometry": "rect",
+          "name": "Footer Placeholder 4"
+        },
+        {
+          "type": "shape",
+          "x": 273808,
+          "w": 1162800,
+          "y": 6489341,
+          "h": 118192,
+          "geometry": "rect",
+          "name": "Date Placeholder 3"
+        },
+        {
+          "type": "shape",
+          "x": 277019,
+          "w": 11629133,
+          "y": 1816571,
+          "h": 4096800,
+          "geometry": "rect",
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 2"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 11626834,
+          "y": 622789,
+          "h": 410899,
+          "geometry": "rect",
+          "text": "Click to edit Master title style",
+          "fontSizePt": 18.0,
+          "name": "Title Placeholder 1"
+        },
+        {
+          "type": "shape",
+          "x": 1416060,
+          "w": 676800,
+          "y": 6472372,
+          "h": 132744,
+          "text": "Slide ",
+          "fontSizePt": 18.0,
+          "name": "Slide Number Placeholder 5"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 327600,
+          "y": 519805,
+          "h": 39600,
+          "geometry": "rect",
+          "name": "Rectangle 44"
+        },
+        {
+          "type": "shape",
+          "x": 61913,
+          "w": 828675,
+          "y": 5218113,
+          "h": 820737,
+          "name": "Freeform 16"
+        },
+        {
+          "type": "shape",
+          "x": 957263,
+          "w": 773112,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 17"
+        },
+        {
+          "type": "shape",
+          "x": 1819275,
+          "w": 622300,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 18"
+        },
+        {
+          "type": "shape",
+          "x": 2573338,
+          "w": 627062,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 19"
+        },
+        {
+          "type": "image",
+          "src": "/gate3-assets/image1.emf",
+          "x": 11403849,
+          "w": 504523,
+          "y": 6397296,
+          "h": 195001,
+          "geometry": "rect"
+        },
+        {
+          "type": "shape",
+          "x": 332324,
+          "w": 11518500,
+          "y": 1931198,
+          "h": 3982245,
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Content Placeholder 8"
+        },
+        {
+          "type": "shape",
+          "x": 333221,
+          "w": 11518500,
+          "y": 682313,
+          "h": 396000,
+          "text": "Click to edit Master title style",
+          "fontSizePt": 18.0,
+          "name": "Title 2"
+        },
+        {
+          "type": "shape",
+          "x": 333221,
+          "w": 11518500,
+          "y": 1085213,
+          "h": 504000,
+          "text": "Click to edit Master subtitle style",
+          "fontSizePt": 18.0,
+          "name": "Subtitle 2"
+        },
+        {
+          "type": "shape",
+          "x": 333221,
+          "w": 11518500,
+          "y": 588361,
+          "h": 396000,
+          "text": "Project Update",
+          "fontSizePt": 18.0,
+          "name": "Title 6"
+        },
+        {
+          "type": "shape",
+          "x": 333221,
+          "w": 11518500,
+          "y": 1055054,
+          "h": 395948,
+          "text": "Breakdown（Application） ",
+          "fontSizePt": 24.0,
+          "name": "Subtitle 7"
+        },
+        {
+          "type": "shape",
+          "x": 402485,
+          "w": 4161994,
+          "y": 1525544,
+          "h": 321558,
+          "geometry": "rect",
+          "text": "Cost break down by phase",
+          "fontSizePt": 18.0,
+          "name": "TextBox 13"
+        },
+        {
+          "type": "shape",
+          "x": 6300866,
+          "w": 4823994,
+          "y": 1495220,
+          "h": 321558,
+          "geometry": "rect",
+          "text": "Development cost break down by function",
+          "fontSizePt": 18.0,
+          "name": "TextBox 17"
+        },
+        {
+          "type": "shape",
+          "x": 5404384,
+          "w": 999540,
+          "y": 3467033,
+          "h": 444433,
+          "fill": "#FF9933",
+          "geometry": "rightArrow",
+          "name": "Arrow: Right 24"
+        }
+      ]
+    },
+    {
+      "index": 11,
+      "elements": [
+        {
+          "type": "shape",
+          "x": 2440941,
+          "w": 8599905,
+          "y": 6207919,
+          "h": 590550,
+          "geometry": "rect",
+          "name": "Footer Placeholder 4"
+        },
+        {
+          "type": "shape",
+          "x": 273808,
+          "w": 1162800,
+          "y": 6489341,
+          "h": 118192,
+          "geometry": "rect",
+          "name": "Date Placeholder 3"
+        },
+        {
+          "type": "shape",
+          "x": 277019,
+          "w": 11629133,
+          "y": 1816571,
+          "h": 4096800,
+          "geometry": "rect",
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 2"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 11626834,
+          "y": 622789,
+          "h": 410899,
+          "geometry": "rect",
+          "text": "Click to edit Master title style",
+          "fontSizePt": 18.0,
+          "name": "Title Placeholder 1"
+        },
+        {
+          "type": "shape",
+          "x": 1416060,
+          "w": 676800,
+          "y": 6472372,
+          "h": 132744,
+          "text": "Slide ",
+          "fontSizePt": 18.0,
+          "name": "Slide Number Placeholder 5"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 327600,
+          "y": 519805,
+          "h": 39600,
+          "geometry": "rect",
+          "name": "Rectangle 44"
+        },
+        {
+          "type": "shape",
+          "x": 61913,
+          "w": 828675,
+          "y": 5218113,
+          "h": 820737,
+          "name": "Freeform 16"
+        },
+        {
+          "type": "shape",
+          "x": 957263,
+          "w": 773112,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 17"
+        },
+        {
+          "type": "shape",
+          "x": 1819275,
+          "w": 622300,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 18"
+        },
+        {
+          "type": "shape",
+          "x": 2573338,
+          "w": 627062,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 19"
+        },
+        {
+          "type": "image",
+          "src": "/gate3-assets/image1.emf",
+          "x": 11403849,
+          "w": 504523,
+          "y": 6397296,
+          "h": 195001,
+          "geometry": "rect"
+        },
+        {
+          "type": "shape",
+          "x": 332324,
+          "w": 11518500,
+          "y": 1931198,
+          "h": 3982245,
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Content Placeholder 8"
+        },
+        {
+          "type": "shape",
+          "x": 333221,
+          "w": 11518500,
+          "y": 682313,
+          "h": 396000,
+          "text": "Click to edit Master title style",
+          "fontSizePt": 18.0,
+          "name": "Title 2"
+        },
+        {
+          "type": "shape",
+          "x": 333221,
+          "w": 11518500,
+          "y": 1085213,
+          "h": 504000,
+          "text": "Click to edit Master subtitle style",
+          "fontSizePt": 18.0,
+          "name": "Subtitle 2"
+        },
+        {
+          "type": "shape",
+          "x": 333221,
+          "w": 11518500,
+          "y": 604489,
+          "h": 396000,
+          "text": "Project Cost (Update)",
+          "fontSizePt": 18.0,
+          "name": "Title 6"
+        },
+        {
+          "type": "shape",
+          "x": 333221,
+          "w": 11518500,
+          "y": 1017322,
+          "h": 395948,
+          "text": "Breakdown（SAP） ",
+          "fontSizePt": 24.0,
+          "name": "Subtitle 7"
+        },
+        {
+          "type": "shape",
+          "x": 429712,
+          "w": 4823994,
+          "y": 1531199,
+          "h": 321558,
+          "geometry": "rect",
+          "text": "Development cost break down by function",
+          "fontSizePt": 18.0,
+          "name": "TextBox 17"
+        },
+        {
+          "type": "shape",
+          "x": 6863135,
+          "w": 3961953,
+          "y": 2750337,
+          "h": 945222,
+          "geometry": "rect",
+          "line": "#00B0F0",
+          "text": "Price：2960\nTotal Amount：¥103,600",
+          "fontSizePt": 16.0,
+          "name": "TextBox 8"
+        }
+      ]
+    },
+    {
+      "index": 12,
+      "elements": [
+        {
+          "type": "shape",
+          "x": 2440941,
+          "w": 8599905,
+          "y": 6207919,
+          "h": 590550,
+          "geometry": "rect",
+          "name": "Footer Placeholder 4"
+        },
+        {
+          "type": "shape",
+          "x": 273808,
+          "w": 1162800,
+          "y": 6489341,
+          "h": 118192,
+          "geometry": "rect",
+          "name": "Date Placeholder 3"
+        },
+        {
+          "type": "shape",
+          "x": 277019,
+          "w": 11629133,
+          "y": 1816571,
+          "h": 4096800,
+          "geometry": "rect",
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 2"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 11626834,
+          "y": 622789,
+          "h": 410899,
+          "geometry": "rect",
+          "text": "Click to edit Master title style",
+          "fontSizePt": 18.0,
+          "name": "Title Placeholder 1"
+        },
+        {
+          "type": "shape",
+          "x": 1739366,
+          "w": 676800,
+          "y": 6473853,
+          "h": 132744,
+          "geometry": "rect",
+          "text": "Slide ",
+          "fontSizePt": 18.0,
+          "name": "Slide Number Placeholder 5"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 327600,
+          "y": 519805,
+          "h": 39600,
+          "geometry": "rect",
+          "name": "Rectangle 44"
+        },
+        {
+          "type": "shape",
+          "x": 61913,
+          "w": 828675,
+          "y": 5218113,
+          "h": 820737,
+          "name": "Freeform 16"
+        },
+        {
+          "type": "shape",
+          "x": 957263,
+          "w": 773112,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 17"
+        },
+        {
+          "type": "shape",
+          "x": 1819275,
+          "w": 622300,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 18"
+        },
+        {
+          "type": "shape",
+          "x": 2573338,
+          "w": 627062,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 19"
+        },
+        {
+          "type": "image",
+          "src": "/gate3-assets/image1.emf",
+          "x": 11403849,
+          "w": 504523,
+          "y": 6397296,
+          "h": 195001,
+          "geometry": "rect"
+        },
+        {
+          "type": "shape",
+          "x": 277019,
+          "w": 11629215,
+          "y": 1816571,
+          "h": 4096868,
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 4"
+        },
+        {
+          "type": "shape",
+          "x": 284179,
+          "w": 11626834,
+          "y": 1038249,
+          "h": 504000,
+          "text": " Web Prototype -Login",
+          "fontSizePt": 24.0,
+          "name": "Subtitle 2"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 11626834,
+          "y": 622789,
+          "h": 410899,
+          "text": "Click to edit Master title style",
+          "fontSizePt": 18.0,
+          "name": "Title 1"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 11626834,
+          "y": 592033,
+          "h": 410899,
+          "text": "Project Update",
+          "fontSizePt": 18.0,
+          "name": "Title 6"
+        },
+        {
+          "type": "shape",
+          "x": 7759256,
+          "w": 3605958,
+          "y": 1827796,
+          "h": 914400,
+          "geometry": "rect",
+          "text": "Link of protype demo ",
+          "fontSizePt": 12.0,
+          "name": "TextBox 1"
+        },
+        {
+          "type": "image",
+          "src": "/gate3-assets/image5.png",
+          "x": 1083749,
+          "w": 5818679,
+          "y": 1542249,
+          "h": 4143047,
+          "geometry": "rect"
+        }
+      ]
+    },
+    {
+      "index": 13,
+      "elements": [
+        {
+          "type": "shape",
+          "x": 2440941,
+          "w": 8599905,
+          "y": 6207919,
+          "h": 590550,
+          "geometry": "rect",
+          "name": "Footer Placeholder 4"
+        },
+        {
+          "type": "shape",
+          "x": 273808,
+          "w": 1162800,
+          "y": 6489341,
+          "h": 118192,
+          "geometry": "rect",
+          "name": "Date Placeholder 3"
+        },
+        {
+          "type": "shape",
+          "x": 277019,
+          "w": 11629133,
+          "y": 1816571,
+          "h": 4096800,
+          "geometry": "rect",
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 2"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 11626834,
+          "y": 622789,
+          "h": 410899,
+          "geometry": "rect",
+          "text": "Click to edit Master title style",
+          "fontSizePt": 18.0,
+          "name": "Title Placeholder 1"
+        },
+        {
+          "type": "shape",
+          "x": 1739366,
+          "w": 676800,
+          "y": 6473853,
+          "h": 132744,
+          "geometry": "rect",
+          "text": "Slide ",
+          "fontSizePt": 18.0,
+          "name": "Slide Number Placeholder 5"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 327600,
+          "y": 519805,
+          "h": 39600,
+          "geometry": "rect",
+          "name": "Rectangle 44"
+        },
+        {
+          "type": "shape",
+          "x": 61913,
+          "w": 828675,
+          "y": 5218113,
+          "h": 820737,
+          "name": "Freeform 16"
+        },
+        {
+          "type": "shape",
+          "x": 957263,
+          "w": 773112,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 17"
+        },
+        {
+          "type": "shape",
+          "x": 1819275,
+          "w": 622300,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 18"
+        },
+        {
+          "type": "shape",
+          "x": 2573338,
+          "w": 627062,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 19"
+        },
+        {
+          "type": "image",
+          "src": "/gate3-assets/image1.emf",
+          "x": 11403849,
+          "w": 504523,
+          "y": 6397296,
+          "h": 195001,
+          "geometry": "rect"
+        },
+        {
+          "type": "shape",
+          "x": 331157,
+          "w": 11529099,
+          "y": 691200,
+          "h": 367200,
+          "text": "Click to edit Master title style",
+          "fontSizePt": 18.0,
+          "name": "Title 1"
+        },
+        {
+          "type": "shape",
+          "x": 331157,
+          "w": 11529099,
+          "y": 5634000,
+          "h": 540000,
+          "text": "Click to edit Master text styles",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 9"
+        },
+        {
+          "type": "shape",
+          "x": 8159687,
+          "w": 3700568,
+          "y": 1929600,
+          "h": 3582000,
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Content Placeholder 8"
+        },
+        {
+          "type": "shape",
+          "x": 330656,
+          "w": 11529099,
+          "y": 584910,
+          "h": 367152,
+          "text": "Project Update",
+          "fontSizePt": 29.0,
+          "name": "Title 4"
+        },
+        {
+          "type": "shape",
+          "x": 331745,
+          "w": 11528510,
+          "y": 1040926,
+          "h": 485937,
+          "text": "Web Prototype -Home",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 5"
+        },
+        {
+          "type": "shape",
+          "x": 331157,
+          "w": 9787838,
+          "y": 6342821,
+          "h": 158379,
+          "name": "Footer Placeholder 7"
+        },
+        {
+          "type": "shape",
+          "x": 331157,
+          "w": 1296816,
+          "y": 6547994,
+          "h": 118177,
+          "name": "Date Placeholder 6"
+        },
+        {
+          "type": "shape",
+          "x": 1630588,
+          "w": 658289,
+          "y": 6547994,
+          "h": 118785,
+          "text": "Slide ",
+          "fontSizePt": 18.0,
+          "name": "Slide Number Placeholder 7"
+        },
+        {
+          "type": "image",
+          "src": "/gate3-assets/image6.png",
+          "x": 40389,
+          "w": 6504058,
+          "y": 1336615,
+          "h": 4621652,
+          "geometry": "rect"
+        },
+        {
+          "type": "image",
+          "src": "/gate3-assets/image7.png",
+          "x": 6599871,
+          "w": 5590542,
+          "y": 1526863,
+          "h": 4038392,
+          "geometry": "rect"
+        }
+      ]
+    },
+    {
+      "index": 14,
+      "elements": [
+        {
+          "type": "shape",
+          "x": 2440941,
+          "w": 8599905,
+          "y": 6207919,
+          "h": 590550,
+          "geometry": "rect",
+          "name": "Footer Placeholder 4"
+        },
+        {
+          "type": "shape",
+          "x": 273808,
+          "w": 1162800,
+          "y": 6489341,
+          "h": 118192,
+          "geometry": "rect",
+          "name": "Date Placeholder 3"
+        },
+        {
+          "type": "shape",
+          "x": 277019,
+          "w": 11629133,
+          "y": 1816571,
+          "h": 4096800,
+          "geometry": "rect",
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 2"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 11626834,
+          "y": 622789,
+          "h": 410899,
+          "geometry": "rect",
+          "text": "Click to edit Master title style",
+          "fontSizePt": 18.0,
+          "name": "Title Placeholder 1"
+        },
+        {
+          "type": "shape",
+          "x": 1739366,
+          "w": 676800,
+          "y": 6473853,
+          "h": 132744,
+          "geometry": "rect",
+          "text": "Slide ",
+          "fontSizePt": 18.0,
+          "name": "Slide Number Placeholder 5"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 327600,
+          "y": 519805,
+          "h": 39600,
+          "geometry": "rect",
+          "name": "Rectangle 44"
+        },
+        {
+          "type": "shape",
+          "x": 61913,
+          "w": 828675,
+          "y": 5218113,
+          "h": 820737,
+          "name": "Freeform 16"
+        },
+        {
+          "type": "shape",
+          "x": 957263,
+          "w": 773112,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 17"
+        },
+        {
+          "type": "shape",
+          "x": 1819275,
+          "w": 622300,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 18"
+        },
+        {
+          "type": "shape",
+          "x": 2573338,
+          "w": 627062,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 19"
+        },
+        {
+          "type": "image",
+          "src": "/gate3-assets/image1.emf",
+          "x": 11403849,
+          "w": 504523,
+          "y": 6397296,
+          "h": 195001,
+          "geometry": "rect"
+        },
+        {
+          "type": "shape",
+          "x": 277019,
+          "w": 11629215,
+          "y": 1816571,
+          "h": 4096868,
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 4"
+        },
+        {
+          "type": "shape",
+          "x": 350345,
+          "w": 11626834,
+          "y": 999472,
+          "h": 359171,
+          "text": "Gate model management",
+          "fontSizePt": 18.0,
+          "name": "Subtitle 2"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 11626834,
+          "y": 622789,
+          "h": 410899,
+          "text": "Click to edit Master title style",
+          "fontSizePt": 18.0,
+          "name": "Title 1"
+        },
+        {
+          "type": "shape",
+          "x": 332323,
+          "w": 11626834,
+          "y": 569914,
+          "h": 410845,
+          "text": "Project Update",
+          "fontSizePt": 18.0,
+          "name": "Title 6"
+        },
+        {
+          "type": "shape",
+          "x": 347359,
+          "w": 11710632,
+          "y": 1470876,
+          "h": 584699,
+          "geometry": "rect",
+          "text": "Manage and monitor project via ABB IS Simple Gate Model.  Delivery team should follow ABB Gate Model to deliver project.",
+          "fontSizePt": 16.0,
+          "name": "TextBox 7"
+        },
+        {
+          "type": "shape",
+          "x": 10934101,
+          "w": 1255759,
+          "y": -738,
+          "h": 1120782,
+          "fill": "#FFC000",
+          "geometry": "rtTriangle",
+          "name": "Right Triangle 9"
+        },
+        {
+          "type": "shape",
+          "x": 11250191,
+          "w": 937469,
+          "y": 277245,
+          "h": 364425,
+          "fill": "#FFC000",
+          "geometry": "rect",
+          "text": "DRAFT",
+          "fontSizePt": 18.0,
+          "name": "TextBox 10"
+        },
+        {
+          "type": "shape",
+          "x": 4928750,
+          "w": 2402628,
+          "y": 3008675,
+          "h": 539680,
+          "fill": "#0070C0",
+          "geometry": "chevron",
+          "text": "Design",
+          "fontSizePt": 12.0,
+          "name": "Chevron 8"
+        },
+        {
+          "type": "shape",
+          "x": 9381839,
+          "w": 2302852,
+          "y": 3011255,
+          "h": 534226,
+          "geometry": "chevron",
+          "text": "Implementation",
+          "fontSizePt": 12.0,
+          "name": "Chevron 10"
+        },
+        {
+          "type": "shape",
+          "x": 7259266,
+          "w": 1982906,
+          "y": 3674978,
+          "h": 1569456,
+          "geometry": "rect",
+          "text": "Activities\nCoding and unit test\nCreate test cases\nIntegration test\nCreate user manual\nUser training\nUAT\nCreate cut-over plan",
+          "fontSizePt": 12.0,
+          "name": "TextBox 17"
+        },
+        {
+          "type": "shape",
+          "x": 9446662,
+          "w": 1884017,
+          "y": 3621926,
+          "h": 1569660,
+          "geometry": "rect",
+          "text": "Activities\nPROD deployment\nGo-live \nTrial run\nTrial run monitoring\nHandover to operation\nClose project",
+          "fontSizePt": 18.0,
+          "name": "TextBox 18"
+        },
+        {
+          "type": "shape",
+          "x": 280618,
+          "w": 11433975,
+          "y": 2861074,
+          "h": 54831,
+          "geometry": "rect",
+          "name": "Rectangle 19"
+        },
+        {
+          "type": "shape",
+          "x": 2527285,
+          "w": 93065,
+          "y": 2839317,
+          "h": 90843,
+          "geometry": "ellipse",
+          "name": "Oval 20"
+        },
+        {
+          "type": "shape",
+          "x": 2165435,
+          "w": 1120947,
+          "y": 2140100,
+          "h": 276963,
+          "geometry": "rect",
+          "text": "2022-09-12",
+          "fontSizePt": 12.0,
+          "name": "TextBox 21"
+        },
+        {
+          "type": "shape",
+          "x": 7062486,
+          "w": 93065,
+          "y": 2848077,
+          "h": 92489,
+          "geometry": "ellipse",
+          "name": "Oval 22"
+        },
+        {
+          "type": "shape",
+          "x": 4478002,
+          "w": 1030513,
+          "y": 2140100,
+          "h": 276963,
+          "geometry": "rect",
+          "text": "2022-09-17",
+          "fontSizePt": 12.0,
+          "name": "TextBox 23"
+        },
+        {
+          "type": "shape",
+          "x": 9297535,
+          "w": 96396,
+          "y": 2839318,
+          "h": 88703,
+          "geometry": "ellipse",
+          "name": "Oval 24"
+        },
+        {
+          "type": "shape",
+          "x": 11589783,
+          "w": 93065,
+          "y": 2837053,
+          "h": 91735,
+          "geometry": "ellipse",
+          "name": "Oval 25"
+        },
+        {
+          "type": "shape",
+          "x": 10981391,
+          "w": 1141436,
+          "y": 2140100,
+          "h": 276963,
+          "geometry": "rect",
+          "text": "2023-04-10",
+          "fontSizePt": 12.0,
+          "name": "TextBox 26"
+        },
+        {
+          "type": "shape",
+          "x": 8565041,
+          "w": 1060389,
+          "y": 5843475,
+          "h": 234704,
+          "fill": "#00B050",
+          "geometry": "rect",
+          "text": "Completed",
+          "fontSizePt": 9.0,
+          "textColor": "#FFFFFF",
+          "name": "Rectangle 27"
+        },
+        {
+          "type": "shape",
+          "x": 9685638,
+          "w": 979734,
+          "y": 5843474,
+          "h": 234704,
+          "fill": "#0070C0",
+          "geometry": "rect",
+          "text": "On-going",
+          "fontSizePt": 9.0,
+          "textColor": "#FFFFFF",
+          "name": "Rectangle 28"
+        },
+        {
+          "type": "shape",
+          "x": 10725328,
+          "w": 979733,
+          "y": 5843475,
+          "h": 229023,
+          "geometry": "rect",
+          "text": "To-be done",
+          "fontSizePt": 9.0,
+          "textColor": "#FFFFFF",
+          "name": "Rectangle 29"
+        },
+        {
+          "type": "shape",
+          "x": 6540926,
+          "w": 1120947,
+          "y": 2140100,
+          "h": 276999,
+          "geometry": "rect",
+          "text": "2022-10-31",
+          "fontSizePt": 12.0,
+          "name": "TextBox 30"
+        },
+        {
+          "type": "shape",
+          "x": 2248297,
+          "w": 243681,
+          "y": 1535157,
+          "h": 255026,
+          "geometry": "ellipse",
+          "name": "Oval 32"
+        },
+        {
+          "type": "shape",
+          "x": 2212100,
+          "w": 379576,
+          "y": 1535870,
+          "h": 246221,
+          "geometry": "rect",
+          "text": "G2",
+          "fontSizePt": 10.0,
+          "name": "TextBox 36"
+        },
+        {
+          "type": "shape",
+          "x": 2248297,
+          "w": 243681,
+          "y": 1535157,
+          "h": 255026,
+          "geometry": "ellipse",
+          "name": "Oval 35"
+        },
+        {
+          "type": "shape",
+          "x": 2248297,
+          "w": 243681,
+          "y": 1535157,
+          "h": 255026,
+          "geometry": "ellipse",
+          "name": "Oval 38"
+        },
+        {
+          "type": "shape",
+          "x": 280619,
+          "w": 2503512,
+          "y": 3018890,
+          "h": 539680,
+          "fill": "#00B050",
+          "geometry": "homePlate",
+          "text": "Scope",
+          "fontSizePt": 12.0,
+          "name": "Pentagon 7"
+        },
+        {
+          "type": "shape",
+          "x": 7138916,
+          "w": 2421870,
+          "y": 3009267,
+          "h": 539680,
+          "geometry": "chevron",
+          "text": "Development & Validation",
+          "fontSizePt": 12.0,
+          "name": "Chevron 9"
+        },
+        {
+          "type": "shape",
+          "x": 2248297,
+          "w": 243681,
+          "y": 1535157,
+          "h": 255026,
+          "geometry": "ellipse",
+          "name": "Oval 44"
+        },
+        {
+          "type": "shape",
+          "x": 4928750,
+          "w": 2126568,
+          "y": 3585616,
+          "h": 1754098,
+          "geometry": "rect",
+          "text": "Activities\nAnalyze detailed requirements\nDraft time plan\nSolution design and approval\nCreate test plan\nCreate time and cost plan baseline",
+          "fontSizePt": 12.0,
+          "name": "TextBox 46"
+        },
+        {
+          "type": "shape",
+          "x": 243802,
+          "w": 2222976,
+          "y": 3648092,
+          "h": 1754098,
+          "geometry": "rect",
+          "text": "Activities \nKick-off project\nSubmit detailed business requirement\nDefine project scope, organization and approach",
+          "fontSizePt": 12.0,
+          "name": "TextBox 47"
+        },
+        {
+          "type": "shape",
+          "x": 4859444,
+          "w": 93065,
+          "y": 2837549,
+          "h": 82679,
+          "geometry": "ellipse",
+          "name": "Oval 55"
+        },
+        {
+          "type": "shape",
+          "x": 2248297,
+          "w": 243681,
+          "y": 1535157,
+          "h": 255026,
+          "geometry": "ellipse",
+          "name": "Oval 57"
+        },
+        {
+          "type": "shape",
+          "x": 2572994,
+          "w": 2203437,
+          "y": 3614277,
+          "h": 2123381,
+          "geometry": "rect",
+          "text": "Activities\nDefine user requirements specification\nSubmit detailed business requirement\nDefine critical design issues\nUpdate scope objectives timeline and budget",
+          "fontSizePt": 12.0,
+          "name": "TextBox 59"
+        },
+        {
+          "type": "shape",
+          "x": 8757502,
+          "w": 1120947,
+          "y": 2140100,
+          "h": 276999,
+          "geometry": "rect",
+          "text": "2023-03-08",
+          "fontSizePt": 12.0,
+          "name": "TextBox 60"
+        }
+      ]
+    },
+    {
+      "index": 15,
+      "elements": [
+        {
+          "type": "shape",
+          "x": 2440941,
+          "w": 8599905,
+          "y": 6207919,
+          "h": 590550,
+          "geometry": "rect",
+          "name": "Footer Placeholder 4"
+        },
+        {
+          "type": "shape",
+          "x": 273808,
+          "w": 1162800,
+          "y": 6489341,
+          "h": 118192,
+          "geometry": "rect",
+          "name": "Date Placeholder 3"
+        },
+        {
+          "type": "shape",
+          "x": 277019,
+          "w": 11629133,
+          "y": 1816571,
+          "h": 4096800,
+          "geometry": "rect",
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 2"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 11626834,
+          "y": 622789,
+          "h": 410899,
+          "geometry": "rect",
+          "text": "Click to edit Master title style",
+          "fontSizePt": 18.0,
+          "name": "Title Placeholder 1"
+        },
+        {
+          "type": "shape",
+          "x": 1739366,
+          "w": 676800,
+          "y": 6473853,
+          "h": 132744,
+          "geometry": "rect",
+          "text": "Slide ",
+          "fontSizePt": 18.0,
+          "name": "Slide Number Placeholder 5"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 327600,
+          "y": 519805,
+          "h": 39600,
+          "geometry": "rect",
+          "name": "Rectangle 44"
+        },
+        {
+          "type": "shape",
+          "x": 61913,
+          "w": 828675,
+          "y": 5218113,
+          "h": 820737,
+          "name": "Freeform 16"
+        },
+        {
+          "type": "shape",
+          "x": 957263,
+          "w": 773112,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 17"
+        },
+        {
+          "type": "shape",
+          "x": 1819275,
+          "w": 622300,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 18"
+        },
+        {
+          "type": "shape",
+          "x": 2573338,
+          "w": 627062,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 19"
+        },
+        {
+          "type": "image",
+          "src": "/gate3-assets/image1.emf",
+          "x": 11403849,
+          "w": 504523,
+          "y": 6397296,
+          "h": 195001,
+          "geometry": "rect"
+        },
+        {
+          "type": "shape",
+          "x": 330157,
+          "w": 11529099,
+          "y": 592332,
+          "h": 367200,
+          "text": "Project update",
+          "fontSizePt": 18.0,
+          "name": "Title 1"
+        },
+        {
+          "type": "shape",
+          "x": 331157,
+          "w": 11529099,
+          "y": 5634000,
+          "h": 540000,
+          "text": "Click to edit Master text styles",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 9"
+        },
+        {
+          "type": "shape",
+          "x": 331156,
+          "w": 11528510,
+          "y": 1929600,
+          "h": 3582000,
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Content Placeholder 8"
+        },
+        {
+          "type": "image",
+          "src": "/gate3-assets/image8.jpeg",
+          "x": 8800585,
+          "w": 3059671,
+          "y": 569813,
+          "h": 1166563,
+          "geometry": "rect"
+        }
+      ]
+    },
+    {
+      "index": 16,
+      "elements": [
+        {
+          "type": "shape",
+          "x": 2440941,
+          "w": 8599905,
+          "y": 6207919,
+          "h": 590550,
+          "geometry": "rect",
+          "name": "Footer Placeholder 4"
+        },
+        {
+          "type": "shape",
+          "x": 273808,
+          "w": 1162800,
+          "y": 6489341,
+          "h": 118192,
+          "geometry": "rect",
+          "name": "Date Placeholder 3"
+        },
+        {
+          "type": "shape",
+          "x": 277019,
+          "w": 11629133,
+          "y": 1816571,
+          "h": 4096800,
+          "geometry": "rect",
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 2"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 11626834,
+          "y": 622789,
+          "h": 410899,
+          "geometry": "rect",
+          "text": "Click to edit Master title style",
+          "fontSizePt": 18.0,
+          "name": "Title Placeholder 1"
+        },
+        {
+          "type": "shape",
+          "x": 1739366,
+          "w": 676800,
+          "y": 6473853,
+          "h": 132744,
+          "geometry": "rect",
+          "text": "Slide ",
+          "fontSizePt": 18.0,
+          "name": "Slide Number Placeholder 5"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 327600,
+          "y": 519805,
+          "h": 39600,
+          "geometry": "rect",
+          "name": "Rectangle 44"
+        },
+        {
+          "type": "shape",
+          "x": 61913,
+          "w": 828675,
+          "y": 5218113,
+          "h": 820737,
+          "name": "Freeform 16"
+        },
+        {
+          "type": "shape",
+          "x": 957263,
+          "w": 773112,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 17"
+        },
+        {
+          "type": "shape",
+          "x": 1819275,
+          "w": 622300,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 18"
+        },
+        {
+          "type": "shape",
+          "x": 2573338,
+          "w": 627062,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 19"
+        },
+        {
+          "type": "image",
+          "src": "/gate3-assets/image1.emf",
+          "x": 11403849,
+          "w": 504523,
+          "y": 6397296,
+          "h": 195001,
+          "geometry": "rect"
+        },
+        {
+          "type": "shape",
+          "x": 407935,
+          "w": 11375163,
+          "y": 2708276,
+          "h": 3529037,
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 19"
+        },
+        {
+          "type": "shape",
+          "x": 342900,
+          "w": 11626834,
+          "y": 622789,
+          "h": 410899,
+          "text": "Gate 3 Check List",
+          "fontSizePt": 18.0,
+          "name": "Title 4"
+        }
+      ]
+    },
+    {
+      "index": 17,
+      "elements": [
+        {
+          "type": "shape",
+          "x": 2440941,
+          "w": 8599905,
+          "y": 6207919,
+          "h": 590550,
+          "geometry": "rect",
+          "name": "Footer Placeholder 4"
+        },
+        {
+          "type": "shape",
+          "x": 273808,
+          "w": 1162800,
+          "y": 6489341,
+          "h": 118192,
+          "geometry": "rect",
+          "name": "Date Placeholder 3"
+        },
+        {
+          "type": "shape",
+          "x": 277019,
+          "w": 11629133,
+          "y": 1816571,
+          "h": 4096800,
+          "geometry": "rect",
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 2"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 11626834,
+          "y": 622789,
+          "h": 410899,
+          "geometry": "rect",
+          "text": "Click to edit Master title style",
+          "fontSizePt": 18.0,
+          "name": "Title Placeholder 1"
+        },
+        {
+          "type": "shape",
+          "x": 1739366,
+          "w": 676800,
+          "y": 6473853,
+          "h": 132744,
+          "geometry": "rect",
+          "text": "Slide ",
+          "fontSizePt": 18.0,
+          "name": "Slide Number Placeholder 5"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 327600,
+          "y": 519805,
+          "h": 39600,
+          "geometry": "rect",
+          "name": "Rectangle 44"
+        },
+        {
+          "type": "shape",
+          "x": 61913,
+          "w": 828675,
+          "y": 5218113,
+          "h": 820737,
+          "name": "Freeform 16"
+        },
+        {
+          "type": "shape",
+          "x": 957263,
+          "w": 773112,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 17"
+        },
+        {
+          "type": "shape",
+          "x": 1819275,
+          "w": 622300,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 18"
+        },
+        {
+          "type": "shape",
+          "x": 2573338,
+          "w": 627062,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 19"
+        },
+        {
+          "type": "image",
+          "src": "/gate3-assets/image1.emf",
+          "x": 11403849,
+          "w": 504523,
+          "y": 6397296,
+          "h": 195001,
+          "geometry": "rect"
+        },
+        {
+          "type": "shape",
+          "x": 407935,
+          "w": 11375163,
+          "y": 2708276,
+          "h": 3529037,
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 19"
+        },
+        {
+          "type": "shape",
+          "x": 350520,
+          "w": 11626834,
+          "y": 622789,
+          "h": 410899,
+          "text": "Gate 3 Check List",
+          "fontSizePt": 18.0,
+          "name": "Title 4"
+        }
+      ]
+    },
+    {
+      "index": 18,
+      "elements": [
+        {
+          "type": "shape",
+          "x": 2440941,
+          "w": 8599905,
+          "y": 6207919,
+          "h": 590550,
+          "geometry": "rect",
+          "name": "Footer Placeholder 4"
+        },
+        {
+          "type": "shape",
+          "x": 273808,
+          "w": 1162800,
+          "y": 6489341,
+          "h": 118192,
+          "geometry": "rect",
+          "name": "Date Placeholder 3"
+        },
+        {
+          "type": "shape",
+          "x": 277019,
+          "w": 11629133,
+          "y": 1816571,
+          "h": 4096800,
+          "geometry": "rect",
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 2"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 11626834,
+          "y": 622789,
+          "h": 410899,
+          "geometry": "rect",
+          "text": "Click to edit Master title style",
+          "fontSizePt": 18.0,
+          "name": "Title Placeholder 1"
+        },
+        {
+          "type": "shape",
+          "x": 1739366,
+          "w": 676800,
+          "y": 6473853,
+          "h": 132744,
+          "geometry": "rect",
+          "text": "Slide ",
+          "fontSizePt": 18.0,
+          "name": "Slide Number Placeholder 5"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 327600,
+          "y": 519805,
+          "h": 39600,
+          "geometry": "rect",
+          "name": "Rectangle 44"
+        },
+        {
+          "type": "shape",
+          "x": 61913,
+          "w": 828675,
+          "y": 5218113,
+          "h": 820737,
+          "name": "Freeform 16"
+        },
+        {
+          "type": "shape",
+          "x": 957263,
+          "w": 773112,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 17"
+        },
+        {
+          "type": "shape",
+          "x": 1819275,
+          "w": 622300,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 18"
+        },
+        {
+          "type": "shape",
+          "x": 2573338,
+          "w": 627062,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 19"
+        },
+        {
+          "type": "image",
+          "src": "/gate3-assets/image1.emf",
+          "x": 11403849,
+          "w": 504523,
+          "y": 6397296,
+          "h": 195001,
+          "geometry": "rect"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 11626834,
+          "y": 1120928,
+          "h": 504000,
+          "text": "Click to edit Master subtitle style",
+          "fontSizePt": 18.0,
+          "name": "Subtitle 2"
+        },
+        {
+          "type": "shape",
+          "x": 403975,
+          "w": 11626834,
+          "y": 1120928,
+          "h": 504000,
+          "text": "Gate 3 Decision Needed",
+          "fontSizePt": 18.0,
+          "name": "Subtitle 1"
+        },
+        {
+          "type": "shape",
+          "x": 366949,
+          "w": 11626834,
+          "y": 612855,
+          "h": 410899,
+          "text": "Gate 3 Check List",
+          "fontSizePt": 18.0,
+          "name": "Title 2"
+        }
+      ]
+    },
+    {
+      "index": 19,
+      "elements": [
+        {
+          "type": "shape",
+          "x": 2440941,
+          "w": 8599905,
+          "y": 6207919,
+          "h": 590550,
+          "geometry": "rect",
+          "name": "Footer Placeholder 4"
+        },
+        {
+          "type": "shape",
+          "x": 273808,
+          "w": 1162800,
+          "y": 6489341,
+          "h": 118192,
+          "geometry": "rect",
+          "name": "Date Placeholder 3"
+        },
+        {
+          "type": "shape",
+          "x": 277019,
+          "w": 11629133,
+          "y": 1816571,
+          "h": 4096800,
+          "geometry": "rect",
+          "text": "Click to edit Master text styles\nSecond level\nThird level\nFourth level\nFifth level",
+          "fontSizePt": 18.0,
+          "name": "Text Placeholder 2"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 11626834,
+          "y": 622789,
+          "h": 410899,
+          "geometry": "rect",
+          "text": "Click to edit Master title style",
+          "fontSizePt": 18.0,
+          "name": "Title Placeholder 1"
+        },
+        {
+          "type": "shape",
+          "x": 1739366,
+          "w": 676800,
+          "y": 6473853,
+          "h": 132744,
+          "geometry": "rect",
+          "text": "Slide ",
+          "fontSizePt": 18.0,
+          "name": "Slide Number Placeholder 5"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 327600,
+          "y": 519805,
+          "h": 39600,
+          "geometry": "rect",
+          "name": "Rectangle 44"
+        },
+        {
+          "type": "shape",
+          "x": 61913,
+          "w": 828675,
+          "y": 5218113,
+          "h": 820737,
+          "name": "Freeform 16"
+        },
+        {
+          "type": "shape",
+          "x": 957263,
+          "w": 773112,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 17"
+        },
+        {
+          "type": "shape",
+          "x": 1819275,
+          "w": 622300,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 18"
+        },
+        {
+          "type": "shape",
+          "x": 2573338,
+          "w": 627062,
+          "y": 5237163,
+          "h": 782637,
+          "name": "Freeform 19"
+        },
+        {
+          "type": "image",
+          "src": "/gate3-assets/image1.emf",
+          "x": 11403849,
+          "w": 504523,
+          "y": 6397296,
+          "h": 195001,
+          "geometry": "rect"
+        },
+        {
+          "type": "shape",
+          "x": 279400,
+          "w": 820800,
+          "y": 459581,
+          "h": 97200,
+          "geometry": "rect",
+          "name": "Rectangle 8"
+        },
+        {
+          "type": "image",
+          "src": "/gate3-assets/image1.emf",
+          "x": 8067675,
+          "w": 3838501,
+          "y": 4430714,
+          "h": 1492516,
+          "geometry": "rect"
+        }
+      ]
+    }
+  ]
+}

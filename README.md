@@ -102,7 +102,7 @@ VITE_BACKEND_ORIGIN=http://localhost:7161
 ### Records (Rule-evaluated)
 | Method | Endpoint | Description |
 |---|---|---|
-| GET    | `/api/records/{slug}?page=1&pageSize=20` | List records with pagination |
+| GET    | `/api/records/{slug}?page=1&perPage=20` | List records with pagination |
 | POST   | `/api/records/{slug}` | Create record (auth + create rule) |
 | GET    | `/api/records/{slug}/{id}` | Get single record (view rule) |
 | PUT    | `/api/records/{slug}/{id}` | Update record (update rule) |

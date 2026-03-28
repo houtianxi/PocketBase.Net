@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { LogOut, Settings, ChevronRight, Database } from 'lucide-react';
+import { LogOut, Settings, ChevronRight, Database, Lock } from 'lucide-react';
 import { api, setAccessToken, type CollectionItem, type LoginResponse } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,11 +10,13 @@ import { RecordsTable } from '@/components/RecordsTable';
 import { UsersView } from '@/components/UsersView';
 import { LogsView } from '@/components/LogsView';
 import { OrderDemoPage } from '@/components/OrderDemoPage';
+import { GateMode3Page } from '@/components/GateMode3Page';
+import { ChangePasswordDialog } from '@/components/ChangePasswordDialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 const TOKEN_KEY = 'pocketbase.net.token';
-type Section = 'collections' | 'users' | 'logs' | 'order-demo';
+type Section = 'collections' | 'users' | 'logs' | 'order-demo' | 'gate-mode3';
 
 // ---------- Login page ----------
 function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
@@ -117,6 +119,9 @@ function App() {
   const [collectionDialogOpen, setCollectionDialogOpen] = useState(false);
   const [editingCollection, setEditingCollection] = useState<CollectionItem | null>(null);
 
+  // Change password dialog state
+  const [changePasswordDialogOpen, setChangePasswordDialogOpen] = useState(false);
+
   // Boot: validate token and load data
   useEffect(() => {
     if (!token) return;
@@ -202,7 +207,9 @@ function App() {
                     ? 'Users'
                     : section === 'logs'
                       ? 'Logs'
-                      : 'Order Demo'}
+                      : section === 'order-demo'
+                        ? 'Order Demo'
+                        : 'Gate Mode3'}
               </span>
             </div>
 
@@ -224,6 +231,14 @@ function App() {
                   <p className="text-xs font-medium leading-none">{profile.displayName || profile.email}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">{isAdmin ? 'Admin' : 'User'}</p>
                 </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setChangePasswordDialogOpen(true)}>
+                      <Lock className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Change password</TooltipContent>
+                </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={logout}>
@@ -255,6 +270,7 @@ function App() {
                 )
             )}
             {section === 'order-demo' && <OrderDemoPage />}
+            {section === 'gate-mode3' && <GateMode3Page />}
             {section === 'users' && <UsersView />}
             {section === 'logs' && <LogsView />}
           </main>
@@ -267,6 +283,12 @@ function App() {
         onClose={() => setCollectionDialogOpen(false)}
         collection={editingCollection}
         onSaved={handleCollectionSaved}
+      />
+
+      {/* Change password dialog */}
+      <ChangePasswordDialog
+        open={changePasswordDialogOpen}
+        onOpenChange={setChangePasswordDialogOpen}
       />
     </TooltipProvider>
   );
