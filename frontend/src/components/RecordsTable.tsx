@@ -215,25 +215,32 @@ function formatCellValue(
             </span>
         );
     }
-    // Handle Relation field type - show display name with modern card design
-    if (fieldType === FieldType.Relation && relationLookup) {
-        if (Array.isArray(value)) {
-            // Multiple relations
-            const items = value
-                .map(id => relationLookup[String(id)] || {
-                    title: String(id).substring(0, 8),
-                    lines: [],
-                })
-                .filter(Boolean);
-            if (items.length === 0) return <span className="text-muted-foreground italic">无</span>;
-            return <RelationCardValue items={items} />;
-        } else {
-            // Single relation
-            const id = String(value);
-            const item = relationLookup[id] || { title: id.substring(0, 8), lines: [] };
-            return <RelationCardValue items={[item]} />;
-            // Fallback: show truncated GUID
-        }
+    // Handle Relation field type — value may now be a full expanded object (from auto-expand API)
+    if (fieldType === FieldType.Relation) {
+        const toCard = (v: unknown): RelationCardData => {
+            if (typeof v === 'string') {
+                // Raw string ID — try lookup first
+                return relationLookup?.[v] ?? { title: v.substring(0, 8) || '?', lines: [] };
+            }
+            if (v && typeof v === 'object' && !Array.isArray(v)) {
+                const obj = v as Record<string, unknown>;
+                const id = typeof obj.id === 'string' ? obj.id : '';
+                // Prefer lookup card (respects displayInRelation config)
+                if (id && relationLookup?.[id]) return relationLookup[id];
+                // Build card from the expanded object fields
+                const skipKeys = new Set(['id', 'created', 'updated', 'collectionId', 'collectionSlug', 'ownerId', 'createdById', 'updatedById']);
+                const entries = Object.entries(obj).filter(
+                    ([k, val]) => !skipKeys.has(k) && val !== null && val !== undefined && typeof val !== 'object' && String(val).trim() !== ''
+                );
+                const lines = entries.slice(0, 5).map(([k, val]) => ({ label: k, value: String(val) }));
+                const title = lines[0]?.value || id.substring(0, 8) || '?';
+                return { title, lines: lines.slice(1) };
+            }
+            return { title: '?', lines: [] };
+        };
+        const cards = Array.isArray(value) ? value.map(v => toCard(v)) : value != null ? [toCard(value)] : [];
+        if (cards.length === 0) return <span className="text-muted-foreground italic">无</span>;
+        return <RelationCardValue items={cards} />;
     }
     if (fieldType === FieldType.File) {
         const fileNames = extractFileNames(value);

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Database, Users, BarChart2, X, Search, Plus, FolderOpen, ShoppingCart, Presentation } from 'lucide-react';
+import { Database, Users, BarChart2, X, Search, Plus, FolderOpen, ShoppingCart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';

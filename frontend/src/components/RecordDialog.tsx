@@ -78,6 +78,46 @@ function getFieldDisplayText(field: Pick<Field, 'name' | 'label' | 'description'
     return field.description?.trim() || field.label?.trim() || field.name;
 }
 
+/** Extract a safe display string from any value, including expanded relation objects */
+function safeStr(v: unknown): string {
+    if (!v && v !== 0) return '';
+    if (typeof v === 'string') return v.trim();
+    if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+    if (Array.isArray(v)) return '';
+    if (typeof v === 'object') {
+        const obj = v as Record<string, unknown>;
+        return String(obj.name || obj.title || obj.label || obj.code || '').trim();
+    }
+    return '';
+}
+
+/**
+ * When the API auto-expands relation fields, values arrive as full objects instead of string IDs.
+ * This normalizes them back to IDs so the edit form works correctly.
+ */
+function normalizeRelationValuesForForm(rawData: Record<string, unknown>, formFields: Field[]): Record<string, unknown> {
+    const result = { ...rawData };
+    for (const field of formFields) {
+        if (field.type !== FieldType.Relation) continue;
+        const val = result[field.name];
+        if (val === null || val === undefined || typeof val === 'string') continue;
+        if (Array.isArray(val)) {
+            result[field.name] = val
+                .map(item => {
+                    if (typeof item === 'string') return item;
+                    if (item && typeof item === 'object') return String((item as Record<string, unknown>).id ?? '');
+                    return '';
+                })
+                .filter((id): id is string => typeof id === 'string' && id.length > 0);
+        } else if (typeof val === 'object') {
+            result[field.name] = typeof (val as Record<string, unknown>).id === 'string'
+                ? (val as Record<string, unknown>).id
+                : '';
+        }
+    }
+    return result;
+}
+
 function RelationPickerDialog({ open, onClose, collectionName, displayFields, records, selectedIds, isMultiple, onConfirm }: {
     open: boolean;
     onClose: () => void;
@@ -110,7 +150,21 @@ function RelationPickerDialog({ open, onClose, collectionName, displayFields, re
         if (raw === null || raw === undefined) return '-';
         if (typeof raw === 'string') return raw.trim() || '-';
         if (typeof raw === 'number' || typeof raw === 'boolean') return String(raw);
-        if (Array.isArray(raw)) return raw.map(v => String(v)).filter(Boolean).join(' / ') || '-';
+        if (Array.isArray(raw)) {
+            return raw.map(v => {
+                if (typeof v === 'string') return v;
+                if (v && typeof v === 'object') {
+                    const obj = v as Record<string, unknown>;
+                    return String(obj.name || obj.title || obj.label || obj.code || obj.id || '');
+                }
+                return String(v ?? '');
+            }).filter(Boolean).join(' / ') || '-';
+        }
+        if (typeof raw === 'object') {
+            // Expanded relation object — show first meaningful text field
+            const obj = raw as Record<string, unknown>;
+            return String(obj.name || obj.title || obj.label || obj.code || obj.id || '-');
+        }
         return '-';
     };
 
@@ -903,8 +957,10 @@ export function RecordDialog({ open, collection, fields, record, onClose, onSave
             if (record) {
                 const { id: _id, created: _c, updated: _u, ...rest } = record.data as Record<string, unknown> & { id?: unknown; created?: unknown; updated?: unknown };
                 void (_id); void (_c); void (_u);
-                setData(rest);
-                void loadFileMetadata(rest);
+                // Normalize expanded relation objects back to IDs for the form
+                const normalized = normalizeRelationValuesForForm(rest, sortedFields);
+                setData(normalized);
+                void loadFileMetadata(normalized);
             } else {
                 const defaults: Record<string, unknown> = {};
                 for (const f of sortedFields) {
@@ -1047,12 +1103,12 @@ export function RecordDialog({ open, collection, fields, record, onClose, onSave
                             const data = item.data;
                             const displayNameField = displayFields[0]?.name;
                             const displayDescField = displayFields[1]?.name;
-                            const displayName = displayNameField && data[displayNameField]
-                                ? String(data[displayNameField])
-                                : (data.name || data.title || data.label || item.id.substring(0, 8)) as string;
-                            const displayDesc = displayDescField && data[displayDescField]
-                                ? String(data[displayDescField])
-                                : undefined;
+                            // Use safeStr to handle expanded objects as well as plain strings
+                            const displayName =
+                                (displayNameField ? safeStr(data[displayNameField]) : '') ||
+                                safeStr(data.name) || safeStr(data.title) || safeStr(data.label) ||
+                                item.id.substring(0, 8);
+                            const displayDesc = displayDescField ? safeStr(data[displayDescField]) || undefined : undefined;
                             return {
                                 id: item.id,
                                 displayName,
