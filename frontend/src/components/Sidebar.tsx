@@ -17,7 +17,7 @@ interface SidebarProps {
 const navItems = [
     { key: 'collections' as const, icon: Database, label: 'Collections' },
     { key: 'order-demo' as const, icon: ShoppingCart, label: 'Order Demo' },
-    { key: 'gate-mode3' as const, icon: Presentation, label: 'Gate Mode3' },
+    // { key: 'gate-mode3' as const, icon: Presentation, label: 'Gate Mode3' },
     { key: 'users' as const, icon: Users, label: 'Users' },
     { key: 'logs' as const, icon: BarChart2, label: 'Logs' },
 ];

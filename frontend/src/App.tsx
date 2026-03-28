@@ -10,7 +10,7 @@ import { RecordsTable } from '@/components/RecordsTable';
 import { UsersView } from '@/components/UsersView';
 import { LogsView } from '@/components/LogsView';
 import { OrderDemoPage } from '@/components/OrderDemoPage';
-import { GateMode3Page } from '@/components/GateMode3Page';
+// import { GateMode3Page } from '@/components/GateMode3Page';
 import { ChangePasswordDialog } from '@/components/ChangePasswordDialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -270,7 +270,7 @@ function App() {
                 )
             )}
             {section === 'order-demo' && <OrderDemoPage />}
-            {section === 'gate-mode3' && <GateMode3Page />}
+            {/* {section === 'gate-mode3' && <GateMode3Page />} */}
             {section === 'users' && <UsersView />}
             {section === 'logs' && <LogsView />}
           </main>
