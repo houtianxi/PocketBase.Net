@@ -12,13 +12,14 @@ import { LogsView } from '@/components/LogsView';
 import { OrderDemoPage } from '@/components/OrderDemoPage';
 import { ApiKeysView } from '@/components/ApiKeysView';
 import { ApiKeyDemoPage } from '@/components/ApiKeyDemoPage';
+import { ApplicationSettingPage } from '@/components/ApplicationSettingPage';
 // import { GateMode3Page } from '@/components/GateMode3Page';
 import { ChangePasswordDialog } from '@/components/ChangePasswordDialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 const TOKEN_KEY = 'pocketbase.net.token';
-type Section = 'collections' | 'users' | 'logs' | 'order-demo' | 'gate-mode3' | 'api-keys' | 'api-demo';
+type Section = 'collections' | 'users' | 'logs' | 'order-demo' | 'gate-mode3' | 'api-keys' | 'api-demo' | 'application-settings';
 
 // ---------- Login page ----------
 function LoginPage({ onLogin }: { onLogin: (token: string) => void }) {
@@ -215,7 +216,9 @@ function App() {
                           ? 'API Keys'
                           : section === 'api-demo'
                             ? 'API 测试台'
-                            : 'Gate Mode3'}
+                            : section === 'application-settings'
+                              ? 'Application Setting'
+                              : 'Gate Mode3'}
               </span>
             </div>
 
@@ -281,6 +284,7 @@ function App() {
             {section === 'logs' && <LogsView />}
             {section === 'api-keys' && <ApiKeysView />}
             {section === 'api-demo' && <ApiKeyDemoPage />}
+            {section === 'application-settings' && <ApplicationSettingPage />}
           </main>
         </div>
       </div>

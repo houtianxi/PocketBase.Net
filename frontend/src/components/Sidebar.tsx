@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Database, Users, BarChart2, X, Search, Plus, FolderOpen, ShoppingCart, Key, FlaskConical } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Database, Users, BarChart2, X, Search, Plus, FolderOpen, ShoppingCart, Key, FlaskConical, Settings, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -10,14 +10,17 @@ interface SidebarProps {
     selectedId: string | null;
     onSelect: (col: CollectionItem) => void;
     onNewCollection: () => void;
-    activeSection: 'collections' | 'users' | 'logs' | 'order-demo' | 'gate-mode3' | 'api-keys' | 'api-demo';
-    onSectionChange: (s: 'collections' | 'users' | 'logs' | 'order-demo' | 'gate-mode3' | 'api-keys' | 'api-demo') => void;
+    activeSection: 'collections' | 'users' | 'logs' | 'order-demo' | 'gate-mode3' | 'api-keys' | 'api-demo' | 'application-settings';
+    onSectionChange: (s: 'collections' | 'users' | 'logs' | 'order-demo' | 'gate-mode3' | 'api-keys' | 'api-demo' | 'application-settings') => void;
 }
 
-const navItems = [
+const mainNavItems = [
     { key: 'collections' as const, icon: Database, label: 'Collections' },
     { key: 'order-demo' as const, icon: ShoppingCart, label: 'Order Demo' },
-    // { key: 'gate-mode3' as const, icon: Presentation, label: 'Gate Mode3' },
+];
+
+const systemNavItems = [
+    { key: 'application-settings' as const, icon: Settings, label: 'Application Setting' },
     { key: 'users' as const, icon: Users, label: 'Users' },
     { key: 'logs' as const, icon: BarChart2, label: 'Logs' },
     { key: 'api-keys' as const, icon: Key, label: 'API Keys' },
@@ -26,6 +29,9 @@ const navItems = [
 
 export function Sidebar({ collections, selectedId, onSelect, onNewCollection, activeSection, onSectionChange }: SidebarProps) {
     const [search, setSearch] = useState('');
+    const [systemOpen, setSystemOpen] = useState(true);
+
+    const isSystemSection = useMemo(() => systemNavItems.some(item => item.key === activeSection), [activeSection]);
 
     const filtered = collections.filter(c =>
         c.name.toLowerCase().includes(search.toLowerCase())
@@ -43,7 +49,7 @@ export function Sidebar({ collections, selectedId, onSelect, onNewCollection, ac
 
             {/* Icon nav */}
             <div className="flex flex-col gap-1 border-b px-2 py-2">
-                {navItems.map(({ key, icon: Icon, label }) => (
+                {mainNavItems.map(({ key, icon: Icon, label }) => (
                     <button
                         key={key}
                         onClick={() => onSectionChange(key)}
@@ -58,6 +64,42 @@ export function Sidebar({ collections, selectedId, onSelect, onNewCollection, ac
                         {label}
                     </button>
                 ))}
+
+                <button
+                    onClick={() => setSystemOpen(v => !v)}
+                    className={cn(
+                        'flex items-center justify-between rounded-md px-2.5 py-1.5 text-[13px] font-medium transition-colors',
+                        isSystemSection
+                            ? 'bg-accent text-accent-foreground'
+                            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                    )}
+                >
+                    <span className="flex items-center gap-2">
+                        <Settings className="h-4 w-4" />
+                        System Setting
+                    </span>
+                    {systemOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                </button>
+
+                {systemOpen && (
+                    <div className="ml-3 flex flex-col gap-1 border-l pl-2">
+                        {systemNavItems.map(({ key, icon: Icon, label }) => (
+                            <button
+                                key={key}
+                                onClick={() => onSectionChange(key)}
+                                className={cn(
+                                    'flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[12px] font-medium transition-colors',
+                                    activeSection === key
+                                        ? 'bg-accent text-accent-foreground'
+                                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                                )}
+                            >
+                                <Icon className="h-3.5 w-3.5" />
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Collections list */}

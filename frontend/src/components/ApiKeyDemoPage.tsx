@@ -27,7 +27,7 @@ const EXAMPLE_SNIPPETS = [
 export function ApiKeyDemoPage() {
     // ── Connection config ─────────────────────────────────────────────────
     const [baseUrl, setBaseUrl] = useState('https://localhost:7161');
-    const [apiKey, setApiKey] = useState('');
+    const [apiKey, setApiKey] = useState('pbn_fcebeface874e9e5c335779eb7ab92f83baa064a69c4555f40ca23d39a8d979d');
 
     // ── Request config ────────────────────────────────────────────────────
     const [method, setMethod] = useState<Method>('GET');
