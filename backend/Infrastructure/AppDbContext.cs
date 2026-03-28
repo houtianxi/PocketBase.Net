@@ -21,6 +21,7 @@ public class AppDbContext : IdentityDbContext<AppUser, IdentityRole, string>
     public DbSet<AiConversation> AiConversations => Set<AiConversation>();
     public DbSet<AiMessage> AiMessages => Set<AiMessage>();
     public DbSet<FileAttachment> FileAttachments => Set<FileAttachment>();
+    public DbSet<AppApiKey> ApiKeys => Set<AppApiKey>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -94,6 +95,16 @@ public class AppDbContext : IdentityDbContext<AppUser, IdentityRole, string>
             entity.Property(x => x.Action).HasMaxLength(100);
             entity.Property(x => x.ResourceType).HasMaxLength(100);
             entity.Property(x => x.ResourceId).HasMaxLength(128);
+        });
+
+        builder.Entity<AppApiKey>(entity =>
+        {
+            entity.HasIndex(x => x.KeyPrefix).IsUnique();
+            entity.Property(x => x.Name).HasMaxLength(100);
+            entity.Property(x => x.OwnerName).HasMaxLength(100);
+            entity.Property(x => x.OwnerEmail).HasMaxLength(255);
+            entity.Property(x => x.KeyPrefix).HasMaxLength(32);
+            entity.Property(x => x.SecretHash).HasMaxLength(128);
         });
 
         builder.Entity<AiConversation>(entity =>

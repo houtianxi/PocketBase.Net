@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Database, Users, BarChart2, X, Search, Plus, FolderOpen, ShoppingCart } from 'lucide-react';
+import { Database, Users, BarChart2, X, Search, Plus, FolderOpen, ShoppingCart, Key, FlaskConical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -10,8 +10,8 @@ interface SidebarProps {
     selectedId: string | null;
     onSelect: (col: CollectionItem) => void;
     onNewCollection: () => void;
-    activeSection: 'collections' | 'users' | 'logs' | 'order-demo' | 'gate-mode3';
-    onSectionChange: (s: 'collections' | 'users' | 'logs' | 'order-demo' | 'gate-mode3') => void;
+    activeSection: 'collections' | 'users' | 'logs' | 'order-demo' | 'gate-mode3' | 'api-keys' | 'api-demo';
+    onSectionChange: (s: 'collections' | 'users' | 'logs' | 'order-demo' | 'gate-mode3' | 'api-keys' | 'api-demo') => void;
 }
 
 const navItems = [
@@ -20,6 +20,8 @@ const navItems = [
     // { key: 'gate-mode3' as const, icon: Presentation, label: 'Gate Mode3' },
     { key: 'users' as const, icon: Users, label: 'Users' },
     { key: 'logs' as const, icon: BarChart2, label: 'Logs' },
+    { key: 'api-keys' as const, icon: Key, label: 'API Keys' },
+    { key: 'api-demo' as const, icon: FlaskConical, label: 'API 测试台' },
 ];
 
 export function Sidebar({ collections, selectedId, onSelect, onNewCollection, activeSection, onSectionChange }: SidebarProps) {

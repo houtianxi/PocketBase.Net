@@ -40,6 +40,12 @@ public class RecordsController(
             throw new NotFoundException($"Collection '{collectionSlug}' not found");
         }
 
+        // ApiKey access check
+        if (!currentUser.ApiKeyCanAccessCollection(collectionSlug))
+            throw new ForbiddenException($"API key is not authorized to access collection '{collectionSlug}'.");
+        if (!currentUser.ApiKeyHasScope("list"))
+            throw new ForbiddenException("API key does not have 'list' scope.");
+
         if (!ruleEvaluator.CanList(collection))
         {
             var ruleLevel = collection.ListRule.ToString();
@@ -205,7 +211,7 @@ public class RecordsController(
         return ordered?.ToList() ?? records;
     }
 
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer,ApiKey")]
     [HttpPost]
     public async Task<ActionResult<RecordResponse>> Create(string collectionSlug, [FromBody] RecordCreateRequest request)
     {
@@ -216,6 +222,11 @@ public class RecordsController(
         {
             throw new NotFoundException($"Collection '{collectionSlug}' not found");
         }
+
+        if (!currentUser.ApiKeyCanAccessCollection(collectionSlug))
+            throw new ForbiddenException($"API key is not authorized to access collection '{collectionSlug}'.");
+        if (!currentUser.ApiKeyHasScope("create"))
+            throw new ForbiddenException("API key does not have 'create' scope.");
 
         if (!ruleEvaluator.CanCreate(collection))
         {
@@ -280,6 +291,11 @@ public class RecordsController(
             throw new ForbiddenException();
         }
 
+        if (!currentUser.ApiKeyCanAccessCollection(collectionSlug))
+            throw new ForbiddenException($"API key is not authorized to access collection '{collectionSlug}'.");
+        if (!currentUser.ApiKeyHasScope("view"))
+            throw new ForbiddenException("API key does not have 'view' scope.");
+
         var allRelationFields = RelationExpander.GetAllRelationFieldNames(collection.Fields.ToList());
         var data = JsonSerializer.Deserialize<Dictionary<string, object?>>(record.DataJson)
                    ?? new Dictionary<string, object?>();
@@ -334,7 +350,7 @@ public class RecordsController(
         });
     }
 
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer,ApiKey")]
     [HttpPut("{id:guid}")]
     public async Task<ActionResult<RecordResponse>> Update(string collectionSlug, Guid id, [FromBody] RecordUpdateRequest request)
     {
@@ -351,6 +367,11 @@ public class RecordsController(
         {
             throw new NotFoundException($"Record '{id}' not found in collection '{collectionSlug}'");
         }
+
+        if (!currentUser.ApiKeyCanAccessCollection(collectionSlug))
+            throw new ForbiddenException($"API key is not authorized to access collection '{collectionSlug}'.");
+        if (!currentUser.ApiKeyHasScope("update"))
+            throw new ForbiddenException("API key does not have 'update' scope.");
 
         if (!ruleEvaluator.CanUpdate(collection, record) && !currentUser.IsAdmin)
         {
@@ -511,7 +532,7 @@ public class RecordsController(
         return Ok(new { repairedCount, totalRecords = records.Count });
     }
 
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Bearer,ApiKey")]
     [HttpDelete("{id:guid}")]
     public async Task<ActionResult> Delete(string collectionSlug, Guid id)
     {
@@ -526,6 +547,11 @@ public class RecordsController(
         {
             throw new NotFoundException($"Record '{id}' not found in collection '{collectionSlug}'");
         }
+
+        if (!currentUser.ApiKeyCanAccessCollection(collectionSlug))
+            throw new ForbiddenException($"API key is not authorized to access collection '{collectionSlug}'.");
+        if (!currentUser.ApiKeyHasScope("delete"))
+            throw new ForbiddenException("API key does not have 'delete' scope.");
 
         if (!ruleEvaluator.CanDelete(collection, record) && !currentUser.IsAdmin)
         {

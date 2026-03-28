@@ -81,7 +81,9 @@ builder.Services.AddAuthentication(options =>
             ValidAudience = jwtAudience,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
         };
-    });
+    })
+    .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, PocketbaseNet.Api.Infrastructure.Auth.ApiKeyAuthenticationHandler>(
+        PocketbaseNet.Api.Infrastructure.Auth.ApiKeyDefaults.AuthenticationScheme, _ => { });
 
 builder.Services.AddAuthorization();
 
