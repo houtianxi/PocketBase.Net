@@ -26,10 +26,7 @@ const EXAMPLE_SNIPPETS = [
 
 export function ApiKeyDemoPage() {
     // ── Connection config ─────────────────────────────────────────────────
-    const [baseUrl, setBaseUrl] = useState(() => {
-        const u = new URL(window.location.href);
-        return `${u.protocol}//${u.hostname}:7161`;
-    });
+    const [baseUrl, setBaseUrl] = useState('https://localhost:7161');
     const [apiKey, setApiKey] = useState('');
 
     // ── Request config ────────────────────────────────────────────────────
@@ -91,6 +88,28 @@ export function ApiKeyDemoPage() {
             : result.status >= 400 ? 'text-amber-600'
                 : 'text-green-600'
         : '';
+
+    const sampleUrl = `${baseUrl.replace(/\/$/, '')}/api/records/order?page=1&perPage=10`;
+    const sampleApiKey = apiKey.trim() || 'pbn_your_api_key_here';
+    const usageSnippets = {
+        react: `const response = await fetch('${sampleUrl}', {
+    method: 'GET',
+    headers: {
+        'X-API-Key': '${sampleApiKey}',
+        'Content-Type': 'application/json'
+    }
+});
+
+const data = await response.json();`,
+        dotnet: `using var client = new HttpClient();
+client.DefaultRequestHeaders.Add("X-API-Key", "${sampleApiKey}");
+
+var res = await client.GetAsync("${sampleUrl}");
+var json = await res.Content.ReadAsStringAsync();`,
+        curl: `curl -k "${sampleUrl}" \\
+    -H "X-API-Key: ${sampleApiKey}" \\
+    -H "Content-Type: application/json"`,
+    };
 
     return (
         <div className="flex h-full flex-col overflow-auto">
@@ -184,6 +203,55 @@ export function ApiKeyDemoPage() {
                                     <span className="truncate text-muted-foreground">{s.label}</span>
                                 </button>
                             ))}
+                        </div>
+                    </section>
+
+                    {/* Usage guide */}
+                    <section className="border-t px-4 py-4 space-y-3">
+                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">使用方法</h3>
+                        <div className="rounded-md border bg-muted/30 p-3 space-y-1.5">
+                            <p className="text-xs font-medium">请求头必须包含</p>
+                            <code className="block text-xs text-muted-foreground break-all">
+                                X-API-Key: {sampleApiKey}
+                            </code>
+                        </div>
+
+                        <div className="space-y-2">
+                            <div className="rounded-md border p-2.5 space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-medium">React / fetch</span>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyText(usageSnippets.react, 'react-snippet')}>
+                                        {copied === 'react-snippet' ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                                    </Button>
+                                </div>
+                                <pre className="rounded bg-muted/50 p-2 text-[11px] leading-relaxed overflow-auto whitespace-pre-wrap break-words">
+                                    {usageSnippets.react}
+                                </pre>
+                            </div>
+
+                            <div className="rounded-md border p-2.5 space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-medium">.NET / HttpClient</span>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyText(usageSnippets.dotnet, 'dotnet-snippet')}>
+                                        {copied === 'dotnet-snippet' ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                                    </Button>
+                                </div>
+                                <pre className="rounded bg-muted/50 p-2 text-[11px] leading-relaxed overflow-auto whitespace-pre-wrap break-words">
+                                    {usageSnippets.dotnet}
+                                </pre>
+                            </div>
+
+                            <div className="rounded-md border p-2.5 space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-medium">cURL</span>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyText(usageSnippets.curl, 'curl-snippet')}>
+                                        {copied === 'curl-snippet' ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                                    </Button>
+                                </div>
+                                <pre className="rounded bg-muted/50 p-2 text-[11px] leading-relaxed overflow-auto whitespace-pre-wrap break-words">
+                                    {usageSnippets.curl}
+                                </pre>
+                            </div>
                         </div>
                     </section>
                 </div>

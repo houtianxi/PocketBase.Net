@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Trash2, Power, Copy, Check, Key, Shield, Calendar, User2 } from 'lucide-react';
+import { Plus, Trash2, Power, Copy, Check, Key, Shield, Calendar, User2, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -306,6 +306,217 @@ function RevealKeyDialog({ keyData, onClose }: { keyData: ApiKeyCreated | null; 
     );
 }
 
+function EditKeyDialog({
+    open,
+    onClose,
+    keyData,
+    collections,
+    onSaved,
+}: {
+    open: boolean;
+    onClose: () => void;
+    keyData: ApiKey | null;
+    collections: CollectionItem[];
+    onSaved: () => void;
+}) {
+    const [name, setName] = useState('');
+    const [ownerName, setOwnerName] = useState('');
+    const [ownerEmail, setOwnerEmail] = useState('');
+    const [description, setDescription] = useState('');
+    const [scopes, setScopes] = useState<string[]>(ALL_SCOPES);
+    const [allCollections, setAllCollections] = useState(true);
+    const [selectedCols, setSelectedCols] = useState<string[]>([]);
+    const [expiresAt, setExpiresAt] = useState('');
+    const [isActive, setIsActive] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (!open || !keyData) return;
+        setName(keyData.name);
+        setOwnerName(keyData.ownerName);
+        setOwnerEmail(keyData.ownerEmail ?? '');
+        setDescription(keyData.description ?? '');
+        setScopes(keyData.scopes?.length ? keyData.scopes : ALL_SCOPES);
+        setAllCollections((keyData.allowedCollections?.length ?? 0) === 0);
+        setSelectedCols(keyData.allowedCollections ?? []);
+        setExpiresAt(keyData.expiresAt ? new Date(keyData.expiresAt).toISOString().slice(0, 16) : '');
+        setIsActive(keyData.isActive);
+        setError('');
+    }, [open, keyData]);
+
+    const toggleScope = (s: string) => {
+        setScopes(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
+    };
+
+    const toggleCol = (slug: string) => {
+        setSelectedCols(prev => prev.includes(slug) ? prev.filter(x => x !== slug) : [...prev, slug]);
+    };
+
+    const submit = async () => {
+        if (!keyData) return;
+        if (!name.trim()) { setError('请输入应用名称'); return; }
+        if (!ownerName.trim()) { setError('请输入负责人姓名'); return; }
+        if (scopes.length === 0) { setError('请至少选择一个权限范围'); return; }
+
+        setSaving(true); setError('');
+        try {
+            await api.put(`/keys/${keyData.id}`, {
+                name: name.trim(),
+                ownerName: ownerName.trim(),
+                ownerEmail: ownerEmail.trim() || null,
+                description: description.trim() || null,
+                scopes: scopes.join(','),
+                allowedCollections: allCollections ? [] : selectedCols,
+                expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null,
+                isActive,
+            });
+            onSaved();
+            onClose();
+        } catch {
+            setError('更新失败，请重试');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={v => !v && onClose()}>
+            <DialogContent className="max-w-[640px] max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                        <Pencil className="h-4 w-4 text-primary" /> 编辑 API Key
+                    </DialogTitle>
+                </DialogHeader>
+
+                <div className="space-y-5 py-2">
+                    <section className="space-y-3">
+                        <h3 className="text-sm font-semibold text-foreground border-b pb-1">应用信息</h3>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">应用名称 *</Label>
+                                <Input value={name} onChange={e => setName(e.target.value)} />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">负责人姓名 *</Label>
+                                <Input value={ownerName} onChange={e => setOwnerName(e.target.value)} />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">负责人邮箱</Label>
+                                <Input type="email" value={ownerEmail} onChange={e => setOwnerEmail(e.target.value)} />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">过期时间（留空 = 永不过期）</Label>
+                                <Input type="datetime-local" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} />
+                            </div>
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-xs">备注说明</Label>
+                            <Input value={description} onChange={e => setDescription(e.target.value)} />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-xs">状态</Label>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsActive(true)}
+                                    className={cn(
+                                        'rounded-md border px-3 py-1.5 text-xs font-medium transition-all',
+                                        isActive ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground'
+                                    )}
+                                >启用</button>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsActive(false)}
+                                    className={cn(
+                                        'rounded-md border px-3 py-1.5 text-xs font-medium transition-all',
+                                        !isActive ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground'
+                                    )}
+                                >禁用</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section className="space-y-3">
+                        <h3 className="text-sm font-semibold text-foreground border-b pb-1">权限范围（Scopes）</h3>
+                        <div className="flex flex-wrap gap-2">
+                            {ALL_SCOPES.map(s => (
+                                <button
+                                    key={s}
+                                    type="button"
+                                    onClick={() => toggleScope(s)}
+                                    className={cn(
+                                        'rounded-md border px-3 py-1.5 text-xs font-medium transition-all',
+                                        scopes.includes(s)
+                                            ? 'border-primary bg-primary/10 text-primary'
+                                            : 'border-border bg-transparent text-muted-foreground hover:border-primary/50'
+                                    )}
+                                >
+                                    {SCOPE_LABELS[s]}
+                                </button>
+                            ))}
+                        </div>
+                    </section>
+
+                    <section className="space-y-3">
+                        <h3 className="text-sm font-semibold text-foreground border-b pb-1">集合访问范围</h3>
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setAllCollections(true)}
+                                className={cn('flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-medium transition-all',
+                                    allCollections ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/50')}
+                            >
+                                <Shield className="h-3.5 w-3.5" /> 全部集合
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setAllCollections(false)}
+                                className={cn('flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-medium transition-all',
+                                    !allCollections ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/50')}
+                            >
+                                指定集合
+                            </button>
+                        </div>
+
+                        {!allCollections && (
+                            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto rounded-md border p-2">
+                                {collections.length === 0 && (
+                                    <span className="text-xs text-muted-foreground p-2">暂无集合</span>
+                                )}
+                                {collections.map(c => (
+                                    <button
+                                        key={c.id}
+                                        type="button"
+                                        onClick={() => toggleCol(c.slug)}
+                                        className={cn(
+                                            'rounded border px-2.5 py-1 text-xs font-medium transition-all',
+                                            selectedCols.includes(c.slug)
+                                                ? 'border-primary bg-primary/10 text-primary'
+                                                : 'border-border text-muted-foreground hover:border-primary/40'
+                                        )}
+                                    >
+                                        {c.name}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </section>
+
+                    {error && <p className="text-xs text-destructive">{error}</p>}
+                </div>
+
+                <DialogFooter>
+                    <Button variant="outline" onClick={onClose}>取消</Button>
+                    <Button onClick={submit} disabled={saving}>{saving ? '保存中...' : '保存修改'}</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 // ─── Main View ────────────────────────────────────────────────────────────────
 
 export function ApiKeysView() {
@@ -313,6 +524,7 @@ export function ApiKeysView() {
     const [collections, setCollections] = useState<CollectionItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [createOpen, setCreateOpen] = useState(false);
+    const [editingKey, setEditingKey] = useState<ApiKey | null>(null);
     const [createdKey, setCreatedKey] = useState<ApiKeyCreated | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -408,6 +620,15 @@ export function ApiKeysView() {
                                             variant="ghost"
                                             size="icon"
                                             className="h-7 w-7"
+                                            title="编辑"
+                                            onClick={() => setEditingKey(k)}
+                                        >
+                                            <Pencil className="h-3.5 w-3.5" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-7 w-7"
                                             title={k.isActive ? '停用' : '启用'}
                                             onClick={() => toggle(k.id)}
                                         >
@@ -482,6 +703,14 @@ export function ApiKeysView() {
             <RevealKeyDialog
                 keyData={createdKey}
                 onClose={() => setCreatedKey(null)}
+            />
+
+            <EditKeyDialog
+                open={!!editingKey}
+                onClose={() => setEditingKey(null)}
+                keyData={editingKey}
+                collections={collections}
+                onSaved={loadKeys}
             />
 
             {/* Delete confirm */}
