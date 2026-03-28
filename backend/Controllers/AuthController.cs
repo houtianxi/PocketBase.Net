@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -152,5 +153,23 @@ public class AuthController(
         }
 
         return Ok(new { message = "Password changed successfully" });
+    }
+
+    [Authorize]
+    [HttpGet("diagnose")]
+    public ActionResult Diagnose()
+    {
+        var claims = User.Claims.Select(c => new { c.Type, c.Value }).ToList();
+        var roles = User.FindAll(System.Security.Claims.ClaimTypes.Role).Select(c => c.Value).ToList();
+        
+        return Ok(new
+        {
+            isAuthenticated = User.Identity?.IsAuthenticated ?? false,
+            userName = User.Identity?.Name ?? "NONE",
+            claims = claims,
+            roles = roles ?? new List<string>(),
+            userId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier) ?? "NONE",
+            message = "Token is valid and authenticated"
+        });
     }
 }
