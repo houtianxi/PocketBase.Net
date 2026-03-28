@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -63,12 +64,26 @@ var jwtSection = builder.Configuration.GetSection("Jwt");
 var jwtIssuer = jwtSection["Issuer"] ?? "PocketbaseNet.Api";
 var jwtAudience = jwtSection["Audience"] ?? "PocketbaseNet.Client";
 var jwtKey = jwtSection["Key"] ?? "CHANGE_THIS_TO_A_STRONG_AND_LONG_SECRET_KEY_1234567890";
+const string SmartAuthScheme = "SmartAuth";
 
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultAuthenticateScheme = SmartAuthScheme;
+    options.DefaultChallengeScheme = SmartAuthScheme;
 })
+    .AddPolicyScheme(SmartAuthScheme, SmartAuthScheme, options =>
+    {
+        options.ForwardDefaultSelector = context =>
+        {
+            var hasApiKey = context.Request.Headers.ContainsKey(ApiKeyDefaults.HeaderName);
+            if (hasApiKey)
+            {
+                return ApiKeyDefaults.AuthenticationScheme;
+            }
+
+            return JwtBearerDefaults.AuthenticationScheme;
+        };
+    })
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
@@ -82,8 +97,8 @@ builder.Services.AddAuthentication(options =>
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
         };
     })
-    .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, PocketbaseNet.Api.Infrastructure.Auth.ApiKeyAuthenticationHandler>(
-        PocketbaseNet.Api.Infrastructure.Auth.ApiKeyDefaults.AuthenticationScheme, _ => { });
+    .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(
+        ApiKeyDefaults.AuthenticationScheme, _ => { });
 
 builder.Services.AddAuthorization();
 
