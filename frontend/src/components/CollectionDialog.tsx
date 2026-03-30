@@ -17,6 +17,7 @@ import {
     api,
     type CollectionPublishStatus,
     FieldType,
+    type FieldMetadata,
     type PublishCollectionEnqueueResponse,
     type PublishCollectionPreviewResponse,
     type PublishPlanItem,
@@ -51,13 +52,14 @@ const TYPE_META: Record<number, TypeMeta> = {
     [FieldType.Relation]: { label: 'Relation', icon: 'RL', colorClass: 'text-rose-600 dark:text-rose-400', bgClass: 'bg-rose-100 dark:bg-rose-950', description: 'Link to another collection' },
     [FieldType.User]: { label: 'User', icon: 'US', colorClass: 'text-emerald-600 dark:text-emerald-400', bgClass: 'bg-emerald-100 dark:bg-emerald-950', description: 'User reference' },
     [FieldType.AutoIncrement]: { label: 'AutoIncrement', icon: '++', colorClass: 'text-gray-600 dark:text-gray-400', bgClass: 'bg-gray-100 dark:bg-gray-800', description: 'Auto-increment integer' },
+    [FieldType.Table]: { label: 'Table', icon: 'TB', colorClass: 'text-cyan-700 dark:text-cyan-300', bgClass: 'bg-cyan-100 dark:bg-cyan-950', description: 'Embedded child rows from related collection' },
 };
 
 const TYPE_ORDER: FieldTypeValue[] = [
     FieldType.Text, FieldType.Number, FieldType.Checkbox, FieldType.Select,
     FieldType.Email, FieldType.Url, FieldType.Date, FieldType.DateTime,
     FieldType.Textarea, FieldType.Json, FieldType.File, FieldType.Avatar,
-    FieldType.Relation, FieldType.User, FieldType.AutoIncrement,
+    FieldType.Relation, FieldType.Table, FieldType.User, FieldType.AutoIncrement,
 ];
 
 const RULE_OPTIONS = [
@@ -101,6 +103,38 @@ function parseRelation(config: unknown): { collectionId: string; relationType: '
     return { collectionId: '', relationType: 'oneToMany' };
 }
 
+function parseTableConfig(config: unknown): {
+    relatedCollectionSlug: string;
+    selectedFields: string[];
+    parentKey: string;
+    childKey: string;
+    onDeleteCascade: boolean;
+    mode: 'create-only' | 'upsert-diff';
+} {
+    try {
+        const c = typeof config === 'string' ? JSON.parse(config) : config;
+        if (c && typeof c === 'object') {
+            const r = c as Record<string, unknown>;
+            return {
+                relatedCollectionSlug: String(r.relatedCollectionSlug ?? ''),
+                selectedFields: Array.isArray(r.selectedFields) ? r.selectedFields.map(v => String(v)).filter(Boolean) : [],
+                parentKey: String(r.parentKey ?? 'Id'),
+                childKey: String(r.childKey ?? 'ParentId'),
+                onDeleteCascade: r.onDeleteCascade !== false,
+                mode: r.mode === 'upsert-diff' ? 'upsert-diff' : 'create-only',
+            };
+        }
+    } catch { /* */ }
+    return {
+        relatedCollectionSlug: '',
+        selectedFields: [],
+        parentKey: 'Id',
+        childKey: 'ParentId',
+        onDeleteCascade: true,
+        mode: 'create-only',
+    };
+}
+
 function buildCfg(
     type: FieldTypeValue,
     selectOpts: string[],
@@ -112,6 +146,13 @@ function buildCfg(
     selectDefaultValue: string,
     checkboxDefaultValue: boolean,
     renameFrom: string,
+    tableRelCollId: string,
+    tableRelCollSlug: string,
+    tableSelectedFields: string[],
+    tableParentKey: string,
+    tableChildKey: string,
+    tableMode: 'create-only' | 'upsert-diff',
+    tableCascadeDelete: boolean,
 ): string {
     const cfg: Record<string, unknown> = {
         displayInRelation,
@@ -145,6 +186,17 @@ function buildCfg(
         cfg.defaultValue = checkboxDefaultValue;
     }
 
+    if (type === FieldType.Table) {
+        cfg.relatedCollectionId = tableRelCollId;
+        cfg.relatedCollectionSlug = tableRelCollSlug;
+        cfg.childTableName = cfg.childTableName ?? '';
+        cfg.selectedFields = tableSelectedFields;
+        cfg.parentKey = tableParentKey || 'Id';
+        cfg.childKey = tableChildKey || 'ParentId';
+        cfg.mode = tableMode;
+        cfg.onDeleteCascade = tableCascadeDelete;
+    }
+
     return JSON.stringify(cfg);
 }
 
@@ -164,6 +216,12 @@ interface FieldDraft {
     numberMax: string;
     selectDefaultValue: string;
     checkboxDefaultValue: boolean;
+    tableRelCollId: string;
+    tableSelectedFields: string[];
+    tableParentKey: string;
+    tableChildKey: string;
+    tableMode: 'create-only' | 'upsert-diff';
+    tableCascadeDelete: boolean;
 }
 
 const EMPTY_DRAFT: FieldDraft = {
@@ -176,12 +234,20 @@ const EMPTY_DRAFT: FieldDraft = {
     numberMax: '',
     selectDefaultValue: '',
     checkboxDefaultValue: false,
+    tableRelCollId: '',
+    tableSelectedFields: [],
+    tableParentKey: 'Id',
+    tableChildKey: 'ParentId',
+    tableMode: 'create-only',
+    tableCascadeDelete: true,
 };
 
 function toDraft(f: Field): FieldDraft {
     const opts = parseSelectOpts(f.config);
     const rel = parseRelation(f.config);
+    const table = parseTableConfig(f.config);
     const cfg = parseFieldConfig(f.config);
+    const tableRelCollId = typeof cfg.relatedCollectionId === 'string' ? cfg.relatedCollectionId : '';
     return {
         name: f.name, label: f.label, type: f.type,
         renameFrom: typeof cfg.renameFrom === 'string' ? cfg.renameFrom : '',
@@ -193,6 +259,12 @@ function toDraft(f: Field): FieldDraft {
         numberMax: cfg.max === undefined || cfg.max === null ? '' : String(cfg.max),
         selectDefaultValue: typeof cfg.defaultValue === 'string' ? cfg.defaultValue : '',
         checkboxDefaultValue: cfg.defaultValue === true,
+        tableRelCollId,
+        tableSelectedFields: table.selectedFields,
+        tableParentKey: table.parentKey,
+        tableChildKey: table.childKey,
+        tableMode: table.mode,
+        tableCascadeDelete: table.onDeleteCascade,
     };
 }
 
@@ -254,9 +326,26 @@ interface FieldEditorProps {
 function FieldEditor({ initial, isNew, allCollections, collectionId, onSave, onCancel, onDirtyChange }: FieldEditorProps) {
     const [d, setD] = useState<FieldDraft>(initial);
     const [err, setErr] = useState('');
+    const [tableFields, setTableFields] = useState<FieldMetadata[]>([]);
     const nameRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => { nameRef.current?.focus(); }, []);
+
+    useEffect(() => {
+        const loadTableFields = async () => {
+            if (d.type !== FieldType.Table || !d.tableRelCollId) {
+                setTableFields([]);
+                return;
+            }
+            try {
+                const res = await api.get<{ fields: FieldMetadata[] }>(`/collections/${d.tableRelCollId}/fields`);
+                setTableFields((res.data?.fields ?? []).filter(f => !f.isSystem));
+            } catch {
+                setTableFields([]);
+            }
+        };
+        void loadTableFields();
+    }, [d.type, d.tableRelCollId]);
 
     const p = (patch: Partial<FieldDraft>) => { setD(prev => ({ ...prev, ...patch })); setErr(''); };
     const meta = TYPE_META[d.type] ?? TYPE_META[FieldType.Text];
@@ -280,6 +369,10 @@ function FieldEditor({ initial, isNew, allCollections, collectionId, onSave, onC
         }
         if (d.type === FieldType.Relation && !d.relCollId)
             return 'Target collection is required';
+        if (d.type === FieldType.Table && !d.tableRelCollId)
+            return 'Related collection is required for table fields';
+        if (d.type === FieldType.Table && d.tableSelectedFields.length === 0)
+            return 'Select at least one display field for table type';
         if (d.type === FieldType.Number && d.numberMin.trim() && Number.isNaN(Number(d.numberMin)))
             return 'Number min must be a valid number';
         if (d.type === FieldType.Number && d.numberMax.trim() && Number.isNaN(Number(d.numberMax)))
@@ -522,6 +615,77 @@ function FieldEditor({ initial, isNew, allCollections, collectionId, onSave, onC
                     </div>
                 )}
 
+                {d.type === FieldType.Table && (
+                    <div className="space-y-3 rounded-lg border p-3 bg-muted/20">
+                        <div className="space-y-1.5">
+                            <Label className="text-xs font-medium">Related collection *</Label>
+                            <Select
+                                value={d.tableRelCollId || '__none__'}
+                                onValueChange={v => p({ tableRelCollId: v === '__none__' ? '' : v, tableSelectedFields: [] })}
+                            >
+                                <SelectTrigger className="h-8 text-xs">
+                                    <SelectValue placeholder="Select a collection" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="__none__" className="text-xs italic text-muted-foreground">Select a collection</SelectItem>
+                                    {allCollections
+                                        .filter(c => c.id !== collectionId)
+                                        .map(c => (
+                                            <SelectItem key={c.id} value={c.id} className="text-xs">{c.name}</SelectItem>
+                                        ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label className="text-xs font-medium">Display fields *</Label>
+                            <div className="rounded border bg-background p-2 max-h-36 overflow-auto space-y-1">
+                                {tableFields.length === 0 && (
+                                    <p className="text-[11px] text-muted-foreground">Select collection first to load fields.</p>
+                                )}
+                                {tableFields.map(f => (
+                                    <label key={f.name} className="flex items-center gap-2 text-xs cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={d.tableSelectedFields.includes(f.name)}
+                                            onChange={e => {
+                                                const next = e.target.checked
+                                                    ? [...d.tableSelectedFields, f.name]
+                                                    : d.tableSelectedFields.filter(x => x !== f.name);
+                                                p({ tableSelectedFields: next });
+                                            }}
+                                        />
+                                        <span className="font-mono">{f.name}</span>
+                                        <span className="text-muted-foreground">{f.label}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-medium">Parent key</Label>
+                                <Input className="h-8 text-xs" value={d.tableParentKey} onChange={e => p({ tableParentKey: e.target.value })} placeholder="Id" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-medium">Child key</Label>
+                                <Input className="h-8 text-xs" value={d.tableChildKey} onChange={e => p({ tableChildKey: e.target.value })} placeholder="ParentId" />
+                            </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label className="text-xs font-medium">Save mode</Label>
+                            <Select value={d.tableMode} onValueChange={v => p({ tableMode: v as 'create-only' | 'upsert-diff' })}>
+                                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="create-only" className="text-xs">create-only</SelectItem>
+                                    <SelectItem value="upsert-diff" className="text-xs">upsert-diff</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                )}
+
                 {/* Error + Actions */}
                 {err && <p className="text-xs text-destructive">{err}</p>}
                 <div className="flex justify-end gap-2 pt-1 border-t">
@@ -582,6 +746,8 @@ export function CollectionDialog({ open, onClose, collection, onSaved }: Collect
     const [publishScript, setPublishScript] = useState('');
     const [publishPlanItems, setPublishPlanItems] = useState<PublishPlanItem[]>([]);
     const [publishTasks, setPublishTasks] = useState<PublishTaskStatus[]>([]);
+    const [unpublishedDependencies, setUnpublishedDependencies] = useState<string[]>([]);
+    const [publishDependenciesTogether, setPublishDependenciesTogether] = useState(true);
 
     useEffect(() => {
         if (!open) return;
@@ -614,6 +780,7 @@ export function CollectionDialog({ open, onClose, collection, onSaved }: Collect
             setPublishScript('');
             setPublishPlanItems([]);
             setPublishTasks([]);
+            setUnpublishedDependencies([]);
         }
     }, [open, collection]);
 
@@ -665,7 +832,25 @@ export function CollectionDialog({ open, onClose, collection, onSaved }: Collect
                     type: draft.type,
                     isRequired: draft.isRequired,
                     isUnique: draft.isUnique,
-                    config: buildCfg(draft.type, draft.selectOpts, draft.relCollId, draft.relType, draft.displayInRelation, draft.numberMin, draft.numberMax, draft.selectDefaultValue, draft.checkboxDefaultValue, draft.renameFrom),
+                    config: buildCfg(
+                        draft.type,
+                        draft.selectOpts,
+                        draft.relCollId,
+                        draft.relType,
+                        draft.displayInRelation,
+                        draft.numberMin,
+                        draft.numberMax,
+                        draft.selectDefaultValue,
+                        draft.checkboxDefaultValue,
+                        draft.renameFrom,
+                        draft.tableRelCollId,
+                        allCollections.find(c => c.id === draft.tableRelCollId)?.slug ?? '',
+                        draft.tableSelectedFields,
+                        draft.tableParentKey,
+                        draft.tableChildKey,
+                        draft.tableMode,
+                        draft.tableCascadeDelete,
+                    ),
                 });
                 setFields(prev => [...prev, res.data]);
             } catch (e: unknown) {
@@ -681,7 +866,25 @@ export function CollectionDialog({ open, onClose, collection, onSaved }: Collect
                 type: draft.type,
                 isRequired: draft.isRequired,
                 isUnique: draft.isUnique,
-                config: JSON.parse(buildCfg(draft.type, draft.selectOpts, draft.relCollId, draft.relType, draft.displayInRelation, draft.numberMin, draft.numberMax, draft.selectDefaultValue, draft.checkboxDefaultValue, draft.renameFrom)) as Record<string, unknown>,
+                config: JSON.parse(buildCfg(
+                    draft.type,
+                    draft.selectOpts,
+                    draft.relCollId,
+                    draft.relType,
+                    draft.displayInRelation,
+                    draft.numberMin,
+                    draft.numberMax,
+                    draft.selectDefaultValue,
+                    draft.checkboxDefaultValue,
+                    draft.renameFrom,
+                    draft.tableRelCollId,
+                    allCollections.find(c => c.id === draft.tableRelCollId)?.slug ?? '',
+                    draft.tableSelectedFields,
+                    draft.tableParentKey,
+                    draft.tableChildKey,
+                    draft.tableMode,
+                    draft.tableCascadeDelete,
+                )) as Record<string, unknown>,
                 displayOrder: fields.length,
                 isSystem: false,
                 createdAt: '',
@@ -703,7 +906,25 @@ export function CollectionDialog({ open, onClose, collection, onSaved }: Collect
                     type: draft.type,
                     isRequired: draft.isRequired,
                     isUnique: draft.isUnique,
-                    config: buildCfg(draft.type, draft.selectOpts, draft.relCollId, draft.relType, draft.displayInRelation, draft.numberMin, draft.numberMax, draft.selectDefaultValue, draft.checkboxDefaultValue, draft.renameFrom),
+                    config: buildCfg(
+                        draft.type,
+                        draft.selectOpts,
+                        draft.relCollId,
+                        draft.relType,
+                        draft.displayInRelation,
+                        draft.numberMin,
+                        draft.numberMax,
+                        draft.selectDefaultValue,
+                        draft.checkboxDefaultValue,
+                        draft.renameFrom,
+                        draft.tableRelCollId,
+                        allCollections.find(c => c.id === draft.tableRelCollId)?.slug ?? '',
+                        draft.tableSelectedFields,
+                        draft.tableParentKey,
+                        draft.tableChildKey,
+                        draft.tableMode,
+                        draft.tableCascadeDelete,
+                    ),
                 });
             } catch (e: unknown) {
                 setError((e as { response?: { data?: { message?: string } } }).response?.data?.message ?? 'Failed to update field');
@@ -717,7 +938,25 @@ export function CollectionDialog({ open, onClose, collection, onSaved }: Collect
             type: draft.type,
             isRequired: draft.isRequired,
             isUnique: draft.isUnique,
-            config: JSON.parse(buildCfg(draft.type, draft.selectOpts, draft.relCollId, draft.relType, draft.displayInRelation, draft.numberMin, draft.numberMax, draft.selectDefaultValue, draft.checkboxDefaultValue, draft.renameFrom)) as Record<string, unknown>,
+            config: JSON.parse(buildCfg(
+                draft.type,
+                draft.selectOpts,
+                draft.relCollId,
+                draft.relType,
+                draft.displayInRelation,
+                draft.numberMin,
+                draft.numberMax,
+                draft.selectDefaultValue,
+                draft.checkboxDefaultValue,
+                draft.renameFrom,
+                draft.tableRelCollId,
+                allCollections.find(c => c.id === draft.tableRelCollId)?.slug ?? '',
+                draft.tableSelectedFields,
+                draft.tableParentKey,
+                draft.tableChildKey,
+                draft.tableMode,
+                draft.tableCascadeDelete,
+            )) as Record<string, unknown>,
         }));
         setEditorOpen(null);
         setFieldEditorDirty(false);
@@ -804,6 +1043,7 @@ export function CollectionDialog({ open, onClose, collection, onSaved }: Collect
             const res = await api.post<PublishCollectionPreviewResponse>(`/collections/${collection.id}/publish/preview`, {});
             setPublishScript(res.data.sqlScript ?? '');
             setPublishPlanItems(res.data.planItems ?? []);
+            setUnpublishedDependencies(res.data.unpublishedDependencies ?? []);
             setStatus('Publish preview generated');
             await loadPublishStatus(collection.id);
             await loadPublishTasks(collection.id);
@@ -820,6 +1060,19 @@ export function CollectionDialog({ open, onClose, collection, onSaved }: Collect
         setError('');
         setStatus('');
         try {
+            if (publishDependenciesTogether && unpublishedDependencies.length > 0) {
+                const dependencySlugs = unpublishedDependencies
+                    .map(dep => dep.split(' ')[0].trim())
+                    .filter(Boolean);
+
+                for (const depSlug of dependencySlugs) {
+                    const depCollection = allCollections.find(c => c.slug === depSlug);
+                    if (depCollection?.id) {
+                        await api.post<PublishCollectionEnqueueResponse>(`/collections/${depCollection.id}/publish`, {});
+                    }
+                }
+            }
+
             const res = await api.post<PublishCollectionEnqueueResponse>(`/collections/${collection.id}/publish`, {});
             setStatus(`Publish task queued: ${res.data.taskId}`);
             await loadPublishStatus(collection.id);
@@ -1205,6 +1458,24 @@ export function CollectionDialog({ open, onClose, collection, onSaved }: Collect
                                                 {publishLoading ? 'Publishing...' : 'Queue Publish Task'}
                                             </Button>
                                         </div>
+
+                                        {unpublishedDependencies.length > 0 && (
+                                            <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 space-y-2 text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+                                                <div className="flex items-center gap-2 text-sm font-medium">
+                                                    <AlertTriangle className="h-4 w-4" />
+                                                    Related collections are not published
+                                                </div>
+                                                <ul className="list-disc ml-5 text-xs space-y-1">
+                                                    {unpublishedDependencies.map(dep => (
+                                                        <li key={dep}>{dep}</li>
+                                                    ))}
+                                                </ul>
+                                                <label className="flex items-center gap-2 text-xs cursor-pointer">
+                                                    <Switch checked={publishDependenciesTogether} onCheckedChange={setPublishDependenciesTogether} />
+                                                    Publish these dependencies together before current collection
+                                                </label>
+                                            </div>
+                                        )}
 
                                         <div className="space-y-2">
                                             <p className="text-sm font-medium">Migration Plan</p>

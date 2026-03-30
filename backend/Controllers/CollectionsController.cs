@@ -275,4 +275,34 @@ public class CollectionsController(
         var job = await publishService.GetTaskAsync(taskId);
         return job is null ? NotFound() : Ok(job);
     }
+
+    /// <summary>
+    /// Get all fields metadata for a collection (used for table field configuration)
+    /// Returns non-system fields with their types and properties
+    /// </summary>
+    [AllowAnonymous]
+    [HttpGet("{id:guid}/fields")]
+    public async Task<ActionResult<FieldsMetadataResponse>> GetFieldsMetadata(Guid id)
+    {
+        var collection = await db.Collections
+            .Include(c => c.Fields)
+            .FirstOrDefaultAsync(x => x.Id == id);
+        if (collection is null)
+            return NotFound();
+
+        var fields = collection.Fields
+            .Where(f => !f.IsSystem)
+            .OrderBy(f => f.DisplayOrder)
+            .Select(f => new FieldMetadata(
+                f.Name,
+                f.Label,
+                (int)f.Type,
+                f.IsRequired,
+                f.IsUnique,
+                false,
+                f.Description))
+            .ToList();
+
+        return Ok(new FieldsMetadataResponse(collection.Id, collection.Slug, fields));
+    }
 }

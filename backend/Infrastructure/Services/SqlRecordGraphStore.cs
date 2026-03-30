@@ -60,6 +60,57 @@ public class SqlRecordGraphStore(SqlServerConnectionFactory connectionFactory)
         return new RecordGraphCreateResponse(parentResponse, childrenCreated);
     }
 
+    public async Task<RecordGraphCreateResponse> UpdateGraphAsync(
+        CollectionDefinition collection,
+        Guid recordId,
+        Dictionary<string, object?> data,
+        Dictionary<string, List<Dictionary<string, object?>>>? children,
+        List<Field> fields,
+        string? ownerId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!connectionFactory.IsSqlServerConfigured())
+            throw new InvalidOperationException("当前数据库未配置 SqlServer，无法执行主子表事务写入。");
+
+        var rootSchema = ParseChildren(collection.SchemaJson);
+        var childLookup = rootSchema.ToDictionary(c => c.Name, c => c, StringComparer.OrdinalIgnoreCase);
+        var tableName = BuildPhysicalTableName(collection.Slug);
+
+        await using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        using var tx = connection.BeginTransaction();
+
+        var now = DateTimeOffset.UtcNow;
+        var parentSql = BuildUpdateSql(tableName, data, fields, recordId, now, out var parentParameters);
+        var affected = await connection.ExecuteAsync(new CommandDefinition(parentSql, parentParameters, tx, cancellationToken: cancellationToken));
+        if (affected == 0)
+            throw new InvalidOperationException($"Record '{recordId}' not found in collection '{collection.Slug}'.");
+
+        var childrenCreated = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (childName, rows) in children ?? new Dictionary<string, List<Dictionary<string, object?>>>(StringComparer.OrdinalIgnoreCase))
+        {
+            if (!childLookup.TryGetValue(childName, out var childSchema))
+                throw new InvalidOperationException($"未在 schemaJson.children 中定义子表 '{childName}'。");
+
+            var childTable = CollectionPublishService.BuildChildTableName(collection.Slug, childSchema.Name);
+            await connection.ExecuteAsync(new CommandDefinition($"DELETE FROM [dbo].[{childTable}] WHERE [ParentId] = @ParentId;", new { ParentId = recordId }, tx, cancellationToken: cancellationToken));
+
+            var inserted = 0;
+            foreach (var row in rows)
+            {
+                var childId = Guid.NewGuid();
+                var sql = BuildChildInsertSql(childTable, row, childSchema.Fields, childId, recordId, now, out var childParameters);
+                await connection.ExecuteAsync(new CommandDefinition(sql, childParameters, tx, cancellationToken: cancellationToken));
+                inserted++;
+            }
+
+            childrenCreated[childName] = inserted;
+        }
+
+        tx.Commit();
+        var parentResponse = new RecordResponse(recordId, collection.Id, collection.Slug, data, ownerId, now, now);
+        return new RecordGraphCreateResponse(parentResponse, childrenCreated);
+    }
+
     private static string BuildInsertSql(
         string tableName,
         Dictionary<string, object?> data,
@@ -128,6 +179,39 @@ VALUES ({string.Join(",", values)});";
         return $@"
 INSERT INTO [dbo].[{tableName}] ({string.Join(",", columns)})
 VALUES ({string.Join(",", values)});";
+    }
+
+    private static string BuildUpdateSql(
+        string tableName,
+        Dictionary<string, object?> data,
+        List<Field> fields,
+        Guid id,
+        DateTimeOffset now,
+        out DynamicParameters parameters)
+    {
+        parameters = new DynamicParameters();
+        parameters.Add("Id", id);
+        parameters.Add("UpdatedAt", now);
+        parameters.Add("DataJson", JsonSerializer.Serialize(data));
+
+        var sets = new List<string>
+        {
+            "[UpdatedAt] = @UpdatedAt",
+            "[DataJson] = @DataJson"
+        };
+
+        foreach (var field in fields.Where(f => !f.IsSystem))
+        {
+            var parameterName = $"p_{field.Name}";
+            data.TryGetValue(field.Name, out var rawValue);
+            parameters.Add(parameterName, ConvertValue(field.Type, rawValue));
+            sets.Add($"[{field.Name}] = @{parameterName}");
+        }
+
+        return $@"
+UPDATE [dbo].[{tableName}]
+SET {string.Join(",", sets)}
+WHERE [Id] = @Id;";
     }
 
     private static List<ChildTableSchema> ParseChildren(string? schemaJson)

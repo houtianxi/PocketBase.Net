@@ -446,6 +446,56 @@ public class RecordsController(
         return Ok(response);
     }
 
+    [Authorize(AuthenticationSchemes = "Bearer,ApiKey")]
+    [HttpPut("{id:guid}/graph")]
+    public async Task<ActionResult<RecordGraphCreateResponse>> UpdateGraph(string collectionSlug, Guid id, [FromBody] RecordGraphCreateRequest request)
+    {
+        var collection = await db.Collections
+            .Include(c => c.Fields)
+            .FirstOrDefaultAsync(x => x.Slug == collectionSlug);
+        if (collection is null)
+            throw new NotFoundException($"Collection '{collectionSlug}' not found");
+
+        if (!currentUser.ApiKeyCanAccessCollection(collectionSlug))
+            throw new ForbiddenException($"API key is not authorized to access collection '{collectionSlug}'.");
+        if (!currentUser.ApiKeyHasScope("update"))
+            throw new ForbiddenException("API key does not have 'update' scope.");
+        if (!ruleEvaluator.CanUpdate(collection, new EntityRecord { Id = id, CollectionDefinitionId = collection.Id }) && !currentUser.IsAdmin)
+            throw new ForbiddenException();
+        if (!await sqlRecordStore.IsPublishedAsync(collection.Id))
+            throw new ValidationException("集合尚未发布到实体表，不能执行主子表事务写入。", new Dictionary<string, List<string>>());
+
+        var normalizedData = NormalizeAndValidateData(request.Data, collection.Fields.Where(f => !f.IsSystem).ToList(), isCreate: false);
+        var response = await sqlRecordGraphStore.UpdateGraphAsync(
+            collection,
+            id,
+            normalizedData,
+            request.Children,
+            collection.Fields.ToList(),
+            currentUser.IsAuthenticated ? currentUser.UserId : null);
+
+        db.AuditLogs.Add(new AuditLog
+        {
+            ActorId = currentUser.UserId,
+            Action = "records.graph-update",
+            ResourceType = collectionSlug,
+            ResourceId = response.Parent.Id.ToString(),
+            DetailJson = JsonSerializer.Serialize(response.ChildrenCreated)
+        });
+        await db.SaveChangesAsync();
+
+        await eventBus.PublishAsync(new EventBus.Event
+        {
+            Type = "record",
+            CollectionSlug = collectionSlug,
+            Action = "update",
+            RecordId = response.Parent.Id.ToString(),
+            Data = normalizedData
+        });
+
+        return Ok(response);
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<RecordResponse>> Get(string collectionSlug, Guid id)
     {

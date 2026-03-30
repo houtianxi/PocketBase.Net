@@ -64,6 +64,7 @@ export type PublishCollectionPreviewResponse = {
     requestedAt: string;
     message?: string;
     planItems: PublishPlanItem[];
+    unpublishedDependencies?: string[];
 };
 
 export type PublishCollectionEnqueueResponse = {
@@ -120,6 +121,7 @@ export const FieldType = {
     Avatar: 15,
     Formula: 16,
     Lookup: 17,
+    Table: 18,
 } as const;
 export type FieldType = (typeof FieldType)[keyof typeof FieldType];
 
@@ -141,6 +143,7 @@ export const FieldTypeNames: Record<FieldType, string> = {
     [FieldType.Avatar]: 'Avatar',
     [FieldType.Formula]: 'Formula',
     [FieldType.Lookup]: 'Lookup',
+    [FieldType.Table]: 'Table',
 };
 
 export type Field = {
@@ -197,6 +200,32 @@ export type FieldTypeDefinition = {
     supportsRelation: boolean;
     supportsValidation: boolean;
     allowedConfigs: string[];
+};
+
+// Table field types
+export type TableFieldConfig = {
+    relatedCollectionSlug: string;
+    selectedFields: string[];
+    parentKey?: string;
+    childKey?: string;
+    onDeleteCascade?: boolean;
+    mode?: 'create-only' | 'upsert-diff';
+};
+
+export type FieldMetadata = {
+    name: string;
+    label: string;
+    type: number;
+    isRequired: boolean;
+    isUnique: boolean;
+    isSystem: boolean;
+    description?: string;
+};
+
+export type FieldsMetadataResponse = {
+    collectionId: string;
+    collectionSlug: string;
+    fields: FieldMetadata[];
 };
 
 // Record types

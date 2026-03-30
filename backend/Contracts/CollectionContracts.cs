@@ -2,6 +2,31 @@ using PocketbaseNet.Api.Domain.Enums;
 
 namespace PocketbaseNet.Api.Contracts;
 
+/// <summary>Configuration for a Table field type - stores mapping to related collection</summary>
+public record TableFieldConfig(
+    string RelatedCollectionSlug,
+    List<string> SelectedFields,
+    string ParentKey = "Id",
+    string ChildKey = "ParentId",
+    bool OnDeleteCascade = true,
+    string Mode = "create-only");
+
+/// <summary>Metadata for a field - used when configuring table fields</summary>
+public record FieldMetadata(
+    string Name,
+    string Label,
+    int Type,
+    bool IsRequired,
+    bool IsUnique,
+    bool IsSystem,
+    string? Description);
+
+/// <summary>Response containing all fields of a collection for selection/configuration</summary>
+public record FieldsMetadataResponse(
+    Guid CollectionId,
+    string CollectionSlug,
+    List<FieldMetadata> Fields);
+
 public record CollectionUpsertRequest(
     string Name,
     string Slug,
@@ -40,6 +65,7 @@ public record PublishPlanItemResponse(
     string? Sql = null
 );
 
+/// <summary>Response for publish preview, including dependency warnings</summary>
 public record PublishCollectionPreviewResponse(
     Guid CollectionId,
     string CollectionSlug,
@@ -49,7 +75,8 @@ public record PublishCollectionPreviewResponse(
     string SchemaHash,
     DateTimeOffset RequestedAt,
     string? Message,
-    IReadOnlyList<PublishPlanItemResponse> PlanItems);
+    IReadOnlyList<PublishPlanItemResponse> PlanItems,
+    List<string>? UnpublishedDependencies = null);
 
 public record PublishCollectionEnqueueResponse(
     Guid TaskId,

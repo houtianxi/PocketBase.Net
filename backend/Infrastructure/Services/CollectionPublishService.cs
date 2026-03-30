@@ -26,7 +26,16 @@ public class CollectionPublishService(
         await EnsurePublishTablesAsync(connection);
 
         var plan = await BuildPlanAsync(collection, connection, cancellationToken);
-        return ToPreviewResponse(plan, "Preview");
+        var preview = ToPreviewResponse(plan, "Preview");
+
+        // Check for unpublished table field dependencies
+        var unpublishedDeps = await GetUnpublishedTableFieldDependenciesAsync(collection, connection, cancellationToken);
+        if (unpublishedDeps.Count > 0)
+        {
+            preview = preview with { UnpublishedDependencies = unpublishedDeps };
+        }
+
+        return preview;
     }
 
     public async Task<PublishCollectionEnqueueResponse> EnqueuePublishAsync(Guid collectionId, string? actorId, CancellationToken cancellationToken = default)
@@ -958,5 +967,68 @@ WHERE [TaskId] = @TaskId;",
         public DateTimeOffset? FinishedAt { get; init; }
         public string? PlanJson { get; init; }
         public string? SqlScript { get; init; }
+    }
+
+    private async Task<List<string>> GetUnpublishedTableFieldDependenciesAsync(CollectionDefinition collection, IDbConnection connection, CancellationToken cancellationToken)
+    {
+        var unpublished = new List<string>();
+        
+        foreach (var field in collection.Fields.Where(f => f.Type == FieldType.Table))
+        {
+            var tableConfig = ExtractTableConfig(field.Config);
+            if (tableConfig == null)
+                continue;
+
+            // Check if related collection exists
+            var relatedCollection = await db.Collections
+                .FirstOrDefaultAsync(c => c.Slug == tableConfig.RelatedCollectionSlug, cancellationToken);
+            if (relatedCollection == null)
+                continue;
+
+            // Check if related collection is published
+            var binding = await connection.QueryFirstOrDefaultAsync<CollectionPublishBindingRow>(new CommandDefinition(@"
+SELECT [CollectionId], [TableName], [IsPublished], [SchemaHash], [UpdatedAt] FROM [dbo].[CollectionPublishBindings]
+WHERE [CollectionId] = @CollectionId", new { CollectionId = relatedCollection.Id }, cancellationToken: cancellationToken));
+            
+            if (binding == null || !binding.IsPublished)
+            {
+                unpublished.Add($"{tableConfig.RelatedCollectionSlug} (associated with field '{field.Name}')");
+            }
+        }
+
+        return unpublished;
+    }
+
+    private static TableFieldConfig? ExtractTableConfig(JsonElement config)
+    {
+        try
+        {
+            if (config.ValueKind != JsonValueKind.Object)
+                return null;
+
+            var relatedSlug = config.TryGetProperty("relatedCollectionSlug", out var relProp) ? relProp.GetString() : null;
+            if (string.IsNullOrWhiteSpace(relatedSlug))
+                return null;
+
+            var selectedFields = new List<string>();
+            if (config.TryGetProperty("selectedFields", out var fieldsProp) && fieldsProp.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in fieldsProp.EnumerateArray())
+                {
+                    if (item.ValueKind == JsonValueKind.String)
+                        selectedFields.Add(item.GetString() ?? "");
+                }
+            }
+
+            var parentKey = config.TryGetProperty("parentKey", out var pkProp) ? pkProp.GetString() : "Id";
+            var childKey = config.TryGetProperty("childKey", out var ckProp) ? ckProp.GetString() : "ParentId";
+            var cascade = config.TryGetProperty("onDeleteCascade", out var cascProp) && cascProp.GetBoolean();
+
+            return new TableFieldConfig(relatedSlug, selectedFields, parentKey ?? "Id", childKey ?? "ParentId", cascade);
+        }
+        catch
+        {
+            return null;
+        }
     }
 }

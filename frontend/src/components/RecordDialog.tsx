@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { api, FieldType, FieldTypeNames, type CollectionItem, type Field, type RecordResponse } from '@/lib/api';
 import { uploadFile, deleteFile, getFilePreviewUrl, getFileDownloadUrl, getFileMetadataBatch, type FileMetadata } from '@/lib/fileUpload';
 import { defaultQuillModules, createImageHandler, createVideoHandler } from '@/lib/quillConfig';
+import { TableFieldEditor } from '@/components/TableFieldEditor';
 
 type UserListResponse = {
     items: Array<{
@@ -948,11 +949,12 @@ function DynamicField({
                 </div>
             );
         }
+        case FieldType.Table:
+            return <TableFieldEditor field={field} value={Array.isArray(value) ? value : []} onChange={onChange} />;
         default:
             return <Input value={strVal} onChange={e => onChange(e.target.value)} placeholder={`Enter ${field.label || field.name}...`} />;
     }
 }
-
 export function RecordDialog({ open, collection, fields, record, onClose, onSaved }: RecordDialogProps) {
     const isEdit = !!record;
     const sortedFields = useMemo(() => [...fields].sort((a, b) => a.displayOrder - b.displayOrder), [fields]);
@@ -1179,6 +1181,10 @@ export function RecordDialog({ open, collection, fields, record, onClose, onSave
             return !Array.isArray(value) || value.length === 0;
         }
 
+        if (field.type === FieldType.Table) {
+            return !Array.isArray(value) || value.length === 0;
+        }
+
         if (field.type === FieldType.Textarea) {
             if (typeof value !== 'string') return true;
             const plain = value.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/gi, ' ').trim();
@@ -1208,10 +1214,34 @@ export function RecordDialog({ open, collection, fields, record, onClose, onSave
 
         setSaving(true); setError('');
         try {
+            const parentData = { ...data };
+            const childPayload: Record<string, Array<Record<string, unknown>>> = {};
+
+            // Collect rows from table-type fields into graph children payload.
+            for (const field of sortedFields.filter(f => f.type === FieldType.Table)) {
+                const tableRows = data[field.name];
+                if (Array.isArray(tableRows)) {
+                    const rows = tableRows
+                        .filter(item => item && typeof item === 'object')
+                        .map(item => {
+                            const row = { ...(item as Record<string, unknown>) };
+                            delete row.__clientId;
+                            return row;
+                        });
+                    if (rows.length > 0) {
+                        childPayload[field.name] = rows;
+                    }
+                }
+                delete (parentData as Record<string, unknown>)[field.name];
+            }
+
             if (isEdit) {
-                await api.put(`/records/${collection.slug}/${record.id}`, { data });
+                if (Object.keys(childPayload).length > 0) {
+                    await api.put(`/records/${collection.slug}/${record.id}/graph`, { data: parentData, children: childPayload });
+                } else {
+                    await api.put(`/records/${collection.slug}/${record.id}`, { data: parentData });
+                }
             } else {
-                const childPayload: Record<string, Array<Record<string, unknown>>> = {};
                 for (const child of childDefinitions) {
                     const raw = childJsonByName[child.name] ?? '[]';
                     try {
@@ -1234,9 +1264,9 @@ export function RecordDialog({ open, collection, fields, record, onClose, onSave
                 }
 
                 if (Object.keys(childPayload).length > 0) {
-                    await api.post(`/records/${collection.slug}/graph`, { data, children: childPayload });
+                    await api.post(`/records/${collection.slug}/graph`, { data: parentData, children: childPayload });
                 } else {
-                    await api.post(`/records/${collection.slug}`, { data });
+                    await api.post(`/records/${collection.slug}`, { data: parentData });
                 }
             }
             onSaved();

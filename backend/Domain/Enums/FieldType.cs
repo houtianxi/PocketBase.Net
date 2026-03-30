@@ -54,5 +54,8 @@ public enum FieldType
     Formula = 16,
 
     /// <summary>Lookup field for relations</summary>
-    Lookup = 17
+    Lookup = 17,
+
+    /// <summary>Table field for embedded child records from another collection</summary>
+    Table = 18
 }
