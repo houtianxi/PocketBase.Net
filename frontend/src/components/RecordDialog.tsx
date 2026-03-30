@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
@@ -61,6 +62,18 @@ type RelationCollectionMap = Record<string, {
 }>;
 
 type FileMetadataMap = Record<string, FileMetadata>;
+type ChildSchemaDefinition = { name: string; fields: Array<{ name: string; type?: string; required?: boolean }> };
+type ParsedCollectionSchema = { children: ChildSchemaDefinition[] };
+
+function parseCollectionSchema(schemaJson: string | undefined): ParsedCollectionSchema {
+    if (!schemaJson?.trim()) return { children: [] };
+    try {
+        const parsed = JSON.parse(schemaJson) as ParsedCollectionSchema;
+        return { children: Array.isArray(parsed.children) ? parsed.children : [] };
+    } catch {
+        return { children: [] };
+    }
+}
 
 function parseFieldConfig(config: unknown): Record<string, unknown> {
     try {
@@ -943,6 +956,7 @@ function DynamicField({
 export function RecordDialog({ open, collection, fields, record, onClose, onSaved }: RecordDialogProps) {
     const isEdit = !!record;
     const sortedFields = useMemo(() => [...fields].sort((a, b) => a.displayOrder - b.displayOrder), [fields]);
+    const childDefinitions = useMemo(() => parseCollectionSchema(collection.schemaJson).children, [collection.schemaJson]);
     const [data, setData] = useState<Record<string, unknown>>({});
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
@@ -951,9 +965,16 @@ export function RecordDialog({ open, collection, fields, record, onClose, onSave
     const [userLoadFailed, setUserLoadFailed] = useState(false);
     const [avatarMetadataMap, setAvatarMetadataMap] = useState<FileMetadataMap>({});
     const [attachmentMetadataMap, setAttachmentMetadataMap] = useState<FileMetadataMap>({});
+    const [childJsonByName, setChildJsonByName] = useState<Record<string, string>>({});
 
     useEffect(() => {
         if (open) {
+            const nextChildJson: Record<string, string> = {};
+            for (const child of childDefinitions) {
+                nextChildJson[child.name] = '[]';
+            }
+            setChildJsonByName(nextChildJson);
+
             if (record) {
                 const { id: _id, created: _c, updated: _u, ...rest } = record.data as Record<string, unknown> & { id?: unknown; created?: unknown; updated?: unknown };
                 void (_id); void (_c); void (_u);
@@ -989,7 +1010,7 @@ export function RecordDialog({ open, collection, fields, record, onClose, onSave
                 setUserLoadFailed(false);
             }
         }
-    }, [open, record, sortedFields]);
+    }, [open, record, sortedFields, childDefinitions]);
 
     const loadFileMetadata = async (sourceData: Record<string, unknown>) => {
         const avatarFileNames: string[] = [];
@@ -1190,7 +1211,33 @@ export function RecordDialog({ open, collection, fields, record, onClose, onSave
             if (isEdit) {
                 await api.put(`/records/${collection.slug}/${record.id}`, { data });
             } else {
-                await api.post(`/records/${collection.slug}`, { data });
+                const childPayload: Record<string, Array<Record<string, unknown>>> = {};
+                for (const child of childDefinitions) {
+                    const raw = childJsonByName[child.name] ?? '[]';
+                    try {
+                        const parsed = JSON.parse(raw);
+                        if (!Array.isArray(parsed)) {
+                            setError(`Child table ${child.name} must be a JSON array.`);
+                            setSaving(false);
+                            return;
+                        }
+
+                        const rows = parsed.filter(item => item && typeof item === 'object') as Array<Record<string, unknown>>;
+                        if (rows.length > 0) {
+                            childPayload[child.name] = rows;
+                        }
+                    } catch {
+                        setError(`Child table ${child.name} contains invalid JSON.`);
+                        setSaving(false);
+                        return;
+                    }
+                }
+
+                if (Object.keys(childPayload).length > 0) {
+                    await api.post(`/records/${collection.slug}/graph`, { data, children: childPayload });
+                } else {
+                    await api.post(`/records/${collection.slug}`, { data });
+                }
             }
             onSaved();
         } catch (e: unknown) {
@@ -1214,6 +1261,26 @@ export function RecordDialog({ open, collection, fields, record, onClose, onSave
                             <p className="text-sm text-muted-foreground py-8 text-center">
                                 No custom fields defined. Add fields in collection settings.
                             </p>
+                        )}
+
+                        {!isEdit && childDefinitions.length > 0 && (
+                            <div className="rounded-xl border border-dashed bg-muted/20 p-4 space-y-4">
+                                <div>
+                                    <h3 className="text-sm font-medium">Child Tables</h3>
+                                    <p className="text-xs text-muted-foreground mt-1">Fill child rows as JSON arrays. Saving will call the transactional graph API.</p>
+                                </div>
+                                {childDefinitions.map(child => (
+                                    <div key={child.name} className="space-y-2">
+                                        <Label className="text-xs font-medium">{child.name}</Label>
+                                        <p className="text-[11px] text-muted-foreground">Fields: {child.fields.map(field => field.name).join(', ') || 'No fields defined'}</p>
+                                        <Textarea
+                                            className="min-h-[120px] font-mono text-xs"
+                                            value={childJsonByName[child.name] ?? '[]'}
+                                            onChange={e => setChildJsonByName(prev => ({ ...prev, [child.name]: e.target.value }))}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
                         )}
                         {sortedFields.map(f => (
                             <div key={f.id} className="space-y-1.5 rounded-lg border bg-muted/10 p-3">

@@ -18,7 +18,9 @@ public class RecordsController(
     RuleEvaluator ruleEvaluator,
     RelationExpander relationExpander,
     EventBus eventBus,
-    CurrentUserAccessor currentUser) : ControllerBase
+    CurrentUserAccessor currentUser,
+    SqlRecordStore sqlRecordStore,
+    SqlRecordGraphStore sqlRecordGraphStore) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<object>> List(
@@ -55,15 +57,33 @@ public class RecordsController(
         page = Math.Max(1, page);
         perPage = Math.Clamp(perPage, 1, 100);
 
-        var query = db.Records.AsNoTracking().Where(x => x.CollectionDefinitionId == collection.Id);
-
-        if (collection.ListRule == Domain.Enums.RuleAccessLevel.Owner && !currentUser.IsAdmin)
+        List<EntityRecord> allRecords;
+        if (await sqlRecordStore.IsPublishedAsync(collection.Id))
         {
-            query = query.Where(x => x.OwnerId == currentUser.UserId);
-        }
+            allRecords = await sqlRecordStore.ListAsync(collection);
+            if (collection.ListRule == Domain.Enums.RuleAccessLevel.Owner && !currentUser.IsAdmin)
+            {
+                allRecords = allRecords
+                    .Where(x => x.OwnerId == currentUser.UserId)
+                    .ToList();
+            }
 
-        // Load all records to apply client-side filters
-        var allRecords = await query.OrderByDescending(x => x.CreatedAt).ToListAsync();
+            allRecords = allRecords
+                .OrderByDescending(x => x.CreatedAt)
+                .ToList();
+        }
+        else
+        {
+            var query = db.Records.AsNoTracking().Where(x => x.CollectionDefinitionId == collection.Id);
+
+            if (collection.ListRule == Domain.Enums.RuleAccessLevel.Owner && !currentUser.IsAdmin)
+            {
+                query = query.Where(x => x.OwnerId == currentUser.UserId);
+            }
+
+            // Load all records to apply client-side filters
+            allRecords = await query.OrderByDescending(x => x.CreatedAt).ToListAsync();
+        }
 
         // Parse and apply filters
         var parsedFilters = QueryParser.ParseFilter(filter);
@@ -172,43 +192,139 @@ public class RecordsController(
             return records.OrderByDescending(r => r.CreatedAt).ToList();
 
         IOrderedEnumerable<EntityRecord>? ordered = null;
+        var comparer = Comparer<object?>.Create(CompareSortValues);
 
         foreach (var sort in sorts)
         {
-            var fieldName = sort.FieldName.ToLowerInvariant();
+            var fieldName = sort.FieldName;
 
-            var sortFunc = new Func<EntityRecord, IComparable?>(r =>
+            object? SortValueSelector(EntityRecord r)
             {
                 var data = JsonSerializer.Deserialize<Dictionary<string, object?>>(r.DataJson) ?? new();
-                if (data.TryGetValue(fieldName, out var value))
+                var value = GetDictionaryValueIgnoreCase(data, fieldName);
+                if (value is not null)
                 {
-                    return value as IComparable ?? (value?.GetHashCode() ?? 0) as IComparable;
+                    return NormalizeJsonValue(value);
                 }
 
-                return fieldName switch
+                return fieldName.ToLowerInvariant() switch
                 {
                     "id" => r.Id,
                     "created" => r.CreatedAt,
                     "updated" => r.UpdatedAt,
                     _ => null
                 };
-            });
+            }
 
             if (ordered == null)
             {
                 ordered = sort.IsDescending
-                    ? records.OrderByDescending(sortFunc)
-                    : records.OrderBy(sortFunc);
+                    ? records.OrderByDescending(SortValueSelector, comparer)
+                    : records.OrderBy(SortValueSelector, comparer);
             }
             else
             {
                 ordered = sort.IsDescending
-                    ? ordered.ThenByDescending(sortFunc)
-                    : ordered.ThenBy(sortFunc);
+                    ? ordered.ThenByDescending(SortValueSelector, comparer)
+                    : ordered.ThenBy(SortValueSelector, comparer);
             }
         }
 
         return ordered?.ToList() ?? records;
+    }
+
+    private static object? GetDictionaryValueIgnoreCase(Dictionary<string, object?> data, string key)
+    {
+        if (data.TryGetValue(key, out var exact))
+            return exact;
+
+        var actualKey = data.Keys.FirstOrDefault(k => string.Equals(k, key, StringComparison.OrdinalIgnoreCase));
+        if (actualKey != null && data.TryGetValue(actualKey, out var value))
+            return value;
+
+        return null;
+    }
+
+    private static int CompareSortValues(object? left, object? right)
+    {
+        left = NormalizeJsonValue(left);
+        right = NormalizeJsonValue(right);
+
+        if (left is null && right is null) return 0;
+        if (left is null) return 1;
+        if (right is null) return -1;
+
+        if (TryToDecimal(left, out var leftNumber) && TryToDecimal(right, out var rightNumber))
+            return leftNumber.CompareTo(rightNumber);
+
+        if (TryToDateTimeOffset(left, out var leftDate) && TryToDateTimeOffset(right, out var rightDate))
+            return leftDate.CompareTo(rightDate);
+
+        if (left is bool leftBool && right is bool rightBool)
+            return leftBool.CompareTo(rightBool);
+
+        if (left is Guid leftGuid && right is Guid rightGuid)
+            return leftGuid.CompareTo(rightGuid);
+
+        if (left.GetType() == right.GetType() && left is IComparable comparable)
+            return comparable.CompareTo(right);
+
+        return string.Compare(left.ToString(), right.ToString(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool TryToDecimal(object value, out decimal result)
+    {
+        result = 0;
+
+        return value switch
+        {
+            byte b => TryAssignDecimal(b, out result),
+            sbyte sb => TryAssignDecimal(sb, out result),
+            short s => TryAssignDecimal(s, out result),
+            ushort us => TryAssignDecimal(us, out result),
+            int i => TryAssignDecimal(i, out result),
+            uint ui => TryAssignDecimal(ui, out result),
+            long l => TryAssignDecimal(l, out result),
+            ulong ul => TryAssignDecimal(ul, out result),
+            float f => TryAssignDecimal(f, out result),
+            double d => TryAssignDecimal(d, out result),
+            decimal m => TryAssignDecimal(m, out result),
+            string s when decimal.TryParse(s, out var parsed) => TryAssignDecimal(parsed, out result),
+            _ => false
+        };
+    }
+
+    private static bool TryAssignDecimal<T>(T value, out decimal result)
+    {
+        try
+        {
+            result = Convert.ToDecimal(value);
+            return true;
+        }
+        catch
+        {
+            result = 0;
+            return false;
+        }
+    }
+
+    private static bool TryToDateTimeOffset(object value, out DateTimeOffset result)
+    {
+        switch (value)
+        {
+            case DateTimeOffset dto:
+                result = dto;
+                return true;
+            case DateTime dt:
+                result = dt;
+                return true;
+            case string s when DateTimeOffset.TryParse(s, out var parsed):
+                result = parsed;
+                return true;
+            default:
+                result = default;
+                return false;
+        }
     }
 
     [Authorize(AuthenticationSchemes = "Bearer,ApiKey")]
@@ -235,17 +351,29 @@ public class RecordsController(
 
         var normalizedData = NormalizeAndValidateData(request.Data, collection.Fields.Where(f => !f.IsSystem).ToList(), isCreate: true);
 
-        var record = new EntityRecord
+        EntityRecord record;
+        if (await sqlRecordStore.IsPublishedAsync(collection.Id))
         {
-            CollectionDefinitionId = collection.Id,
-            DataJson = JsonSerializer.Serialize(normalizedData),
-            OwnerId = currentUser.IsAuthenticated ? currentUser.UserId : null,
-            CreatedById = currentUser.UserId,
-            UpdatedById = currentUser.UserId,
-            UpdatedAt = DateTimeOffset.UtcNow
-        };
+            record = await sqlRecordStore.CreateAsync(
+                collection,
+                normalizedData,
+                currentUser.IsAuthenticated ? currentUser.UserId : null);
+        }
+        else
+        {
+            record = new EntityRecord
+            {
+                CollectionDefinitionId = collection.Id,
+                DataJson = JsonSerializer.Serialize(normalizedData),
+                OwnerId = currentUser.IsAuthenticated ? currentUser.UserId : null,
+                CreatedById = currentUser.UserId,
+                UpdatedById = currentUser.UserId,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
 
-        db.Records.Add(record);
+            db.Records.Add(record);
+        }
+
         db.AuditLogs.Add(new AuditLog
         {
             ActorId = currentUser.UserId,
@@ -269,6 +397,55 @@ public class RecordsController(
         return Ok(ToResponse(record, collectionSlug));
     }
 
+    [Authorize(AuthenticationSchemes = "Bearer,ApiKey")]
+    [HttpPost("graph")]
+    public async Task<ActionResult<RecordGraphCreateResponse>> CreateGraph(string collectionSlug, [FromBody] RecordGraphCreateRequest request)
+    {
+        var collection = await db.Collections
+            .Include(c => c.Fields)
+            .FirstOrDefaultAsync(x => x.Slug == collectionSlug);
+        if (collection is null)
+            throw new NotFoundException($"Collection '{collectionSlug}' not found");
+
+        if (!currentUser.ApiKeyCanAccessCollection(collectionSlug))
+            throw new ForbiddenException($"API key is not authorized to access collection '{collectionSlug}'.");
+        if (!currentUser.ApiKeyHasScope("create"))
+            throw new ForbiddenException("API key does not have 'create' scope.");
+        if (!ruleEvaluator.CanCreate(collection))
+            throw new ForbiddenException();
+        if (!await sqlRecordStore.IsPublishedAsync(collection.Id))
+            throw new ValidationException("集合尚未发布到实体表，不能执行主子表事务写入。", new Dictionary<string, List<string>>());
+
+        var normalizedData = NormalizeAndValidateData(request.Data, collection.Fields.Where(f => !f.IsSystem).ToList(), isCreate: true);
+        var response = await sqlRecordGraphStore.CreateGraphAsync(
+            collection,
+            normalizedData,
+            request.Children,
+            collection.Fields.ToList(),
+            currentUser.IsAuthenticated ? currentUser.UserId : null);
+
+        db.AuditLogs.Add(new AuditLog
+        {
+            ActorId = currentUser.UserId,
+            Action = "records.graph-create",
+            ResourceType = collectionSlug,
+            ResourceId = response.Parent.Id.ToString(),
+            DetailJson = JsonSerializer.Serialize(response.ChildrenCreated)
+        });
+        await db.SaveChangesAsync();
+
+        await eventBus.PublishAsync(new EventBus.Event
+        {
+            Type = "record",
+            CollectionSlug = collectionSlug,
+            Action = "create",
+            RecordId = response.Parent.Id.ToString(),
+            Data = normalizedData
+        });
+
+        return Ok(response);
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<RecordResponse>> Get(string collectionSlug, Guid id)
     {
@@ -280,7 +457,16 @@ public class RecordsController(
             throw new NotFoundException($"Collection '{collectionSlug}' not found");
         }
 
-        var record = await db.Records.FirstOrDefaultAsync(x => x.Id == id && x.CollectionDefinitionId == collection.Id);
+        EntityRecord? record;
+        if (await sqlRecordStore.IsPublishedAsync(collection.Id))
+        {
+            record = await sqlRecordStore.GetAsync(collection, id);
+        }
+        else
+        {
+            record = await db.Records.FirstOrDefaultAsync(x => x.Id == id && x.CollectionDefinitionId == collection.Id);
+        }
+
         if (record is null)
         {
             throw new NotFoundException($"Record '{id}' not found in collection '{collectionSlug}'");
@@ -362,7 +548,17 @@ public class RecordsController(
             throw new NotFoundException($"Collection '{collectionSlug}' not found");
         }
 
-        var record = await db.Records.FirstOrDefaultAsync(x => x.Id == id && x.CollectionDefinitionId == collection.Id);
+        var isPublished = await sqlRecordStore.IsPublishedAsync(collection.Id);
+        EntityRecord? record;
+        if (isPublished)
+        {
+            record = await sqlRecordStore.GetAsync(collection, id);
+        }
+        else
+        {
+            record = await db.Records.FirstOrDefaultAsync(x => x.Id == id && x.CollectionDefinitionId == collection.Id);
+        }
+
         if (record is null)
         {
             throw new NotFoundException($"Record '{id}' not found in collection '{collectionSlug}'");
@@ -380,9 +576,22 @@ public class RecordsController(
 
         var normalizedData = NormalizeAndValidateData(request.Data, collection.Fields.Where(f => !f.IsSystem).ToList(), isCreate: false);
 
-        record.DataJson = JsonSerializer.Serialize(normalizedData);
-        record.UpdatedById = currentUser.UserId;
-        record.UpdatedAt = DateTimeOffset.UtcNow;
+        if (isPublished)
+        {
+            var updated = await sqlRecordStore.UpdateAsync(collection, id, normalizedData);
+            if (updated is null)
+            {
+                throw new NotFoundException($"Record '{id}' not found in collection '{collectionSlug}'");
+            }
+
+            record = updated;
+        }
+        else
+        {
+            record.DataJson = JsonSerializer.Serialize(normalizedData);
+            record.UpdatedById = currentUser.UserId;
+            record.UpdatedAt = DateTimeOffset.UtcNow;
+        }
 
         db.AuditLogs.Add(new AuditLog
         {
@@ -542,7 +751,17 @@ public class RecordsController(
             throw new NotFoundException($"Collection '{collectionSlug}' not found");
         }
 
-        var record = await db.Records.FirstOrDefaultAsync(x => x.Id == id && x.CollectionDefinitionId == collection.Id);
+        var isPublished = await sqlRecordStore.IsPublishedAsync(collection.Id);
+        EntityRecord? record;
+        if (isPublished)
+        {
+            record = await sqlRecordStore.GetAsync(collection, id);
+        }
+        else
+        {
+            record = await db.Records.FirstOrDefaultAsync(x => x.Id == id && x.CollectionDefinitionId == collection.Id);
+        }
+
         if (record is null)
         {
             throw new NotFoundException($"Record '{id}' not found in collection '{collectionSlug}'");
@@ -558,7 +777,18 @@ public class RecordsController(
             throw new ForbiddenException();
         }
 
-        db.Records.Remove(record);
+        if (isPublished)
+        {
+            var deleted = await sqlRecordStore.DeleteAsync(collection, id);
+            if (!deleted)
+            {
+                throw new NotFoundException($"Record '{id}' not found in collection '{collectionSlug}'");
+            }
+        }
+        else
+        {
+            db.Records.Remove(record);
+        }
         db.AuditLogs.Add(new AuditLog
         {
             ActorId = currentUser.UserId,

@@ -4,13 +4,16 @@ using Microsoft.EntityFrameworkCore;
 using PocketbaseNet.Api.Contracts;
 using PocketbaseNet.Api.Domain.Entities;
 using PocketbaseNet.Api.Infrastructure;
+using PocketbaseNet.Api.Infrastructure.Services;
 
 namespace PocketbaseNet.Api.Controllers;
 
 [ApiController]
 [Authorize(Roles = "Admin")]
 [Route("api/collections")]
-public class CollectionsController(AppDbContext db) : ControllerBase
+public class CollectionsController(
+    AppDbContext db,
+    CollectionPublishService publishService) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IEnumerable<CollectionResponse>>> List()
@@ -235,5 +238,41 @@ public class CollectionsController(AppDbContext db) : ControllerBase
             newCollection.Id, newCollection.Name, newCollection.Slug, newCollection.Description, newCollection.SchemaJson,
             newCollection.ListRule, newCollection.ViewRule, newCollection.CreateRule, newCollection.UpdateRule, newCollection.DeleteRule,
             newCollection.OwnerField, newCollection.CreatedAt, newCollection.UpdatedAt));
+    }
+
+    [HttpPost("{id:guid}/publish/preview")]
+    public async Task<ActionResult<PublishCollectionPreviewResponse>> PreviewPublish(Guid id)
+    {
+        var result = await publishService.PreviewAsync(id);
+        return Ok(result);
+    }
+
+    [HttpPost("{id:guid}/publish")]
+    public async Task<ActionResult<PublishCollectionEnqueueResponse>> Publish(Guid id)
+    {
+        var actorId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var result = await publishService.EnqueuePublishAsync(id, actorId);
+        return Ok(result);
+    }
+
+    [HttpGet("{id:guid}/publish-status")]
+    public async Task<ActionResult<CollectionPublishStatusResponse>> PublishStatus(Guid id)
+    {
+        var status = await publishService.GetStatusAsync(id);
+        return Ok(status);
+    }
+
+    [HttpGet("{id:guid}/publish-jobs")]
+    public async Task<ActionResult<IReadOnlyList<PublishTaskStatusResponse>>> PublishJobs(Guid id)
+    {
+        var jobs = await publishService.ListTasksAsync(id);
+        return Ok(jobs);
+    }
+
+    [HttpGet("publish-jobs/{taskId:guid}")]
+    public async Task<ActionResult<PublishTaskStatusResponse>> PublishJob(Guid taskId)
+    {
+        var job = await publishService.GetTaskAsync(taskId);
+        return job is null ? NotFound() : Ok(job);
     }
 }

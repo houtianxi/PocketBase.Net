@@ -1,4 +1,6 @@
 using System.Text;
+using Hangfire;
+using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
@@ -56,6 +58,10 @@ builder.Services.AddScoped<CurrentUserAccessor>();
 builder.Services.AddScoped<RuleEvaluator>();
 builder.Services.AddScoped<FieldService>();
 builder.Services.AddScoped<RelationExpander>();
+builder.Services.AddScoped<SqlServerConnectionFactory>();
+builder.Services.AddScoped<CollectionPublishService>();
+builder.Services.AddScoped<SqlRecordStore>();
+builder.Services.AddScoped<SqlRecordGraphStore>();
 builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
 builder.Services.AddSingleton<EventBus>();
 builder.Services.AddHttpContextAccessor();
@@ -147,6 +153,28 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+var databaseProvider = builder.Configuration["DatabaseProvider"] ?? "Sqlite";
+if (string.Equals(databaseProvider, "SqlServer", StringComparison.OrdinalIgnoreCase))
+{
+    var hangfireConnection = builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? throw new InvalidOperationException("SQL Server 模式下必须配置 DefaultConnection 才能启用 Hangfire。");
+
+    builder.Services.AddHangfire(config => config
+        .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+        .UseSimpleAssemblyNameTypeSerializer()
+        .UseRecommendedSerializerSettings()
+        .UseSqlServerStorage(hangfireConnection, new SqlServerStorageOptions
+        {
+            PrepareSchemaIfNecessary = true,
+            QueuePollInterval = TimeSpan.FromSeconds(5)
+        }));
+    builder.Services.AddHangfireServer();
+}
+else
+{
+    builder.Services.AddSingleton<IBackgroundJobClient, NoopBackgroundJobClient>();
+}
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -207,6 +235,11 @@ app.UseHttpsRedirection();
 app.UseCors("Frontend");
 app.UseAuthentication();
 app.UseAuthorization();
+
+if (string.Equals(databaseProvider, "SqlServer", StringComparison.OrdinalIgnoreCase))
+{
+    app.UseHangfireDashboard("/hangfire");
+}
 
 app.MapControllers();
 app.MapGet("/api/health", () => Results.Ok(new { status = "ok", service = "PocketbaseNet.Api" }));

@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Plus, Trash2, GripVertical, Check, X, Pencil, AlertTriangle, MoreVertical, Copy, Zap } from 'lucide-react';
+import { Plus, Trash2, GripVertical, Check, X, Pencil, AlertTriangle, MoreVertical, Copy, Zap, Rocket, RefreshCw } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
@@ -14,7 +15,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { cn } from '@/lib/utils';
 import {
     api,
+    type CollectionPublishStatus,
     FieldType,
+    type PublishCollectionEnqueueResponse,
+    type PublishCollectionPreviewResponse,
+    type PublishPlanItem,
+    type PublishTaskStatus,
     type CollectionItem,
     type Field,
     type FieldType as FieldTypeValue,
@@ -105,10 +111,15 @@ function buildCfg(
     numberMax: string,
     selectDefaultValue: string,
     checkboxDefaultValue: boolean,
+    renameFrom: string,
 ): string {
     const cfg: Record<string, unknown> = {
         displayInRelation,
     };
+
+    if (renameFrom.trim()) {
+        cfg.renameFrom = renameFrom.trim();
+    }
 
     if (type === FieldType.Select) {
         const values = selectOpts.map(v => v.trim()).filter(Boolean);
@@ -142,6 +153,7 @@ interface FieldDraft {
     name: string;
     label: string;
     type: FieldTypeValue;
+    renameFrom: string;
     isRequired: boolean;
     isUnique: boolean;
     selectOpts: string[];
@@ -156,6 +168,7 @@ interface FieldDraft {
 
 const EMPTY_DRAFT: FieldDraft = {
     name: '', label: '', type: FieldType.Text,
+    renameFrom: '',
     isRequired: false, isUnique: false,
     selectOpts: [''], relCollId: '', relType: 'oneToMany',
     displayInRelation: true,
@@ -171,6 +184,7 @@ function toDraft(f: Field): FieldDraft {
     const cfg = parseFieldConfig(f.config);
     return {
         name: f.name, label: f.label, type: f.type,
+        renameFrom: typeof cfg.renameFrom === 'string' ? cfg.renameFrom : '',
         isRequired: f.isRequired, isUnique: f.isUnique,
         selectOpts: opts.length ? opts : [''],
         relCollId: rel.collectionId, relType: rel.relationType,
@@ -323,6 +337,17 @@ function FieldEditor({ initial, isNew, allCollections, collectionId, onSave, onC
                             onKeyDown={e => e.key === 'Enter' && d.type !== FieldType.Select && d.type !== FieldType.Relation && handleSave()}
                         />
                     </div>
+                </div>
+
+                <div className="space-y-1.5">
+                    <Label className="text-xs font-medium">Rename from <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                    <Input
+                        className="h-8 font-mono text-xs"
+                        placeholder="old_column_name"
+                        value={d.renameFrom}
+                        onChange={e => p({ renameFrom: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
+                    />
+                    <p className="text-[10px] text-muted-foreground">发布时若找到旧字段，会直接在数据库里重命名列并保留原值。</p>
                 </div>
 
                 {/* Required + Unique */}
@@ -528,6 +553,7 @@ export function CollectionDialog({ open, onClose, collection, onSaved }: Collect
     const [collName, setCollName] = useState('');
     const [slug, setSlug] = useState('');
     const [description, setDescription] = useState('');
+    const [schemaJson, setSchemaJson] = useState('{\n  "children": []\n}');
     const [listRule, setListRule] = useState('1');
     const [viewRule, setViewRule] = useState('1');
     const [createRule, setCreateRule] = useState('1');
@@ -551,6 +577,11 @@ export function CollectionDialog({ open, onClose, collection, onSaved }: Collect
     const [fieldEditorDirty, setFieldEditorDirty] = useState(false);
     const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
     const [confirmActionOpen, setConfirmActionOpen] = useState<'delete' | 'truncate' | null>(null);
+    const [publishStatus, setPublishStatus] = useState<CollectionPublishStatus | null>(null);
+    const [publishLoading, setPublishLoading] = useState(false);
+    const [publishScript, setPublishScript] = useState('');
+    const [publishPlanItems, setPublishPlanItems] = useState<PublishPlanItem[]>([]);
+    const [publishTasks, setPublishTasks] = useState<PublishTaskStatus[]>([]);
 
     useEffect(() => {
         if (!open) return;
@@ -562,6 +593,7 @@ export function CollectionDialog({ open, onClose, collection, onSaved }: Collect
             setCollName(collection.name);
             setSlug(collection.slug);
             setDescription(collection.description ?? '');
+            setSchemaJson(collection.schemaJson && collection.schemaJson.trim() ? collection.schemaJson : '{\n  "children": []\n}');
             setListRule(String(collection.listRule));
             setViewRule(String(collection.viewRule));
             setCreateRule(String(collection.createRule));
@@ -570,13 +602,51 @@ export function CollectionDialog({ open, onClose, collection, onSaved }: Collect
             api.get<Field[]>(`/collections/${collection.id}/fields`)
                 .then(r => setFields(r.data.filter(f => !f.isSystem)))
                 .catch(() => setFields([]));
+            void loadPublishStatus(collection.id);
+            void loadPublishTasks(collection.id);
         } else {
             setCollName(''); setSlug(''); setDescription('');
+            setSchemaJson('{\n  "children": []\n}');
             setListRule('1'); setViewRule('1'); setCreateRule('1');
             setUpdateRule('2'); setDeleteRule('2');
             setFields([]);
+            setPublishStatus(null);
+            setPublishScript('');
+            setPublishPlanItems([]);
+            setPublishTasks([]);
         }
     }, [open, collection]);
+
+    const loadPublishStatus = async (collectionId: string) => {
+        try {
+            const res = await api.get<CollectionPublishStatus>(`/collections/${collectionId}/publish-status`);
+            setPublishStatus(res.data);
+        } catch {
+            setPublishStatus(null);
+        }
+    };
+
+    const loadPublishTasks = async (collectionId: string) => {
+        try {
+            const res = await api.get<PublishTaskStatus[]>(`/collections/${collectionId}/publish-jobs`);
+            setPublishTasks(res.data ?? []);
+        } catch {
+            setPublishTasks([]);
+        }
+    };
+
+    useEffect(() => {
+        if (!open || !collection?.id) return;
+        const hasActiveTask = publishTasks.some(task => task.status === 'Queued' || task.status === 'Running');
+        if (!hasActiveTask) return;
+
+        const timer = window.setInterval(() => {
+            void loadPublishStatus(collection.id);
+            void loadPublishTasks(collection.id);
+        }, 2500);
+
+        return () => window.clearInterval(timer);
+    }, [open, collection?.id, publishTasks]);
 
     const handleNameChange = (v: string) => {
         setCollName(v);
@@ -595,7 +665,7 @@ export function CollectionDialog({ open, onClose, collection, onSaved }: Collect
                     type: draft.type,
                     isRequired: draft.isRequired,
                     isUnique: draft.isUnique,
-                    config: buildCfg(draft.type, draft.selectOpts, draft.relCollId, draft.relType, draft.displayInRelation, draft.numberMin, draft.numberMax, draft.selectDefaultValue, draft.checkboxDefaultValue),
+                    config: buildCfg(draft.type, draft.selectOpts, draft.relCollId, draft.relType, draft.displayInRelation, draft.numberMin, draft.numberMax, draft.selectDefaultValue, draft.checkboxDefaultValue, draft.renameFrom),
                 });
                 setFields(prev => [...prev, res.data]);
             } catch (e: unknown) {
@@ -611,7 +681,7 @@ export function CollectionDialog({ open, onClose, collection, onSaved }: Collect
                 type: draft.type,
                 isRequired: draft.isRequired,
                 isUnique: draft.isUnique,
-                config: JSON.parse(buildCfg(draft.type, draft.selectOpts, draft.relCollId, draft.relType, draft.displayInRelation, draft.numberMin, draft.numberMax, draft.selectDefaultValue, draft.checkboxDefaultValue)) as Record<string, unknown>,
+                config: JSON.parse(buildCfg(draft.type, draft.selectOpts, draft.relCollId, draft.relType, draft.displayInRelation, draft.numberMin, draft.numberMax, draft.selectDefaultValue, draft.checkboxDefaultValue, draft.renameFrom)) as Record<string, unknown>,
                 displayOrder: fields.length,
                 isSystem: false,
                 createdAt: '',
@@ -633,7 +703,7 @@ export function CollectionDialog({ open, onClose, collection, onSaved }: Collect
                     type: draft.type,
                     isRequired: draft.isRequired,
                     isUnique: draft.isUnique,
-                    config: buildCfg(draft.type, draft.selectOpts, draft.relCollId, draft.relType, draft.displayInRelation, draft.numberMin, draft.numberMax, draft.selectDefaultValue, draft.checkboxDefaultValue),
+                    config: buildCfg(draft.type, draft.selectOpts, draft.relCollId, draft.relType, draft.displayInRelation, draft.numberMin, draft.numberMax, draft.selectDefaultValue, draft.checkboxDefaultValue, draft.renameFrom),
                 });
             } catch (e: unknown) {
                 setError((e as { response?: { data?: { message?: string } } }).response?.data?.message ?? 'Failed to update field');
@@ -647,7 +717,7 @@ export function CollectionDialog({ open, onClose, collection, onSaved }: Collect
             type: draft.type,
             isRequired: draft.isRequired,
             isUnique: draft.isUnique,
-            config: JSON.parse(buildCfg(draft.type, draft.selectOpts, draft.relCollId, draft.relType, draft.displayInRelation, draft.numberMin, draft.numberMax, draft.selectDefaultValue, draft.checkboxDefaultValue)) as Record<string, unknown>,
+            config: JSON.parse(buildCfg(draft.type, draft.selectOpts, draft.relCollId, draft.relType, draft.displayInRelation, draft.numberMin, draft.numberMax, draft.selectDefaultValue, draft.checkboxDefaultValue, draft.renameFrom)) as Record<string, unknown>,
         }));
         setEditorOpen(null);
         setFieldEditorDirty(false);
@@ -702,7 +772,7 @@ export function CollectionDialog({ open, onClose, collection, onSaved }: Collect
             const payload = {
                 name: collName.trim(), slug: slug.trim(), description,
                 listRule: +listRule, viewRule: +viewRule, createRule: +createRule,
-                updateRule: +updateRule, deleteRule: +deleteRule, schemaJson: '{}',
+                updateRule: +updateRule, deleteRule: +deleteRule, schemaJson,
             };
             if (isEdit) {
                 await api.put(`/collections/${collection!.id}`, payload);
@@ -723,6 +793,42 @@ export function CollectionDialog({ open, onClose, collection, onSaved }: Collect
         } catch (e: unknown) {
             setError((e as { response?: { data?: { message?: string } } }).response?.data?.message ?? 'Save failed');
         } finally { setSaving(false); }
+    };
+
+    const handlePreviewPublish = async () => {
+        if (!collection?.id) return;
+        setPublishLoading(true);
+        setError('');
+        setStatus('');
+        try {
+            const res = await api.post<PublishCollectionPreviewResponse>(`/collections/${collection.id}/publish/preview`, {});
+            setPublishScript(res.data.sqlScript ?? '');
+            setPublishPlanItems(res.data.planItems ?? []);
+            setStatus('Publish preview generated');
+            await loadPublishStatus(collection.id);
+            await loadPublishTasks(collection.id);
+        } catch (e: unknown) {
+            setError((e as { response?: { data?: { message?: string } } }).response?.data?.message ?? 'Publish failed');
+        } finally {
+            setPublishLoading(false);
+        }
+    };
+
+    const handleEnqueuePublish = async () => {
+        if (!collection?.id) return;
+        setPublishLoading(true);
+        setError('');
+        setStatus('');
+        try {
+            const res = await api.post<PublishCollectionEnqueueResponse>(`/collections/${collection.id}/publish`, {});
+            setStatus(`Publish task queued: ${res.data.taskId}`);
+            await loadPublishStatus(collection.id);
+            await loadPublishTasks(collection.id);
+        } catch (e: unknown) {
+            setError((e as { response?: { data?: { message?: string } } }).response?.data?.message ?? 'Publish enqueue failed');
+        } finally {
+            setPublishLoading(false);
+        }
     };
 
     const handleDuplicate = async () => {
@@ -818,6 +924,7 @@ export function CollectionDialog({ open, onClose, collection, onSaved }: Collect
                         <TabsList className="w-full">
                             <TabsTrigger value="fields" className="flex-1">Fields</TabsTrigger>
                             <TabsTrigger value="rules" className="flex-1">API Rules</TabsTrigger>
+                            <TabsTrigger value="publish" className="flex-1">Publish</TabsTrigger>
                         </TabsList>
                     </div>
 
@@ -1040,6 +1147,113 @@ export function CollectionDialog({ open, onClose, collection, onSaved }: Collect
                                         </Select>
                                     </div>
                                 ))}
+                            </div>
+                        </ScrollArea>
+                    </TabsContent>
+
+                    {/*  PUBLISH TAB  */}
+                    <TabsContent value="publish" className="flex-1 overflow-hidden flex flex-col mt-0">
+                        <ScrollArea className="flex-1 px-6 py-4">
+                            <div className="space-y-5 pb-6">
+                                {!isEdit && (
+                                    <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                                        Create the collection first, then return to this tab to publish physical tables.
+                                    </div>
+                                )}
+
+                                {isEdit && (
+                                    <>
+                                        <div className="rounded-lg border p-4 space-y-2 bg-muted/20">
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-sm font-medium">Publish Status</p>
+                                                <Button variant="outline" size="sm" className="h-8" onClick={() => { if (collection?.id) { void loadPublishStatus(collection.id); void loadPublishTasks(collection.id); } }}>
+                                                    <RefreshCw className="mr-1 h-3.5 w-3.5" />Refresh
+                                                </Button>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground">Published: {publishStatus?.isPublished ? 'Yes' : 'No'}</p>
+                                            <p className="text-xs text-muted-foreground">Table: {publishStatus?.tableName ?? '-'}</p>
+                                            <p className="text-xs text-muted-foreground">Version: {publishStatus?.latestVersion ?? '-'}</p>
+                                            <p className="text-xs text-muted-foreground">Schema Hash: {publishStatus?.schemaHash ?? '-'}</p>
+                                        </div>
+
+                                        <div className="rounded-lg border p-4 space-y-2">
+                                            <p className="text-sm font-medium">SchemaJson (supports children tables)</p>
+                                            <p className="text-xs text-muted-foreground">
+                                                Example: {`{"children":[{"name":"items","cascadeDelete":true,"fields":[{"name":"product","type":"Text","required":true},{"name":"qty","type":"Number","required":true}]}]}`}
+                                            </p>
+                                            <Textarea
+                                                className="min-h-[160px] font-mono text-xs"
+                                                value={schemaJson}
+                                                onChange={e => setSchemaJson(e.target.value)}
+                                            />
+                                            <p className="text-xs text-muted-foreground">Remember to click "Save changes" before publish if you edited schemaJson.</p>
+                                        </div>
+
+                                        <div className="flex flex-wrap gap-2">
+                                            <Button
+                                                variant="outline"
+                                                onClick={() => void handlePreviewPublish()}
+                                                disabled={publishLoading || saving}
+                                            >
+                                                {publishLoading ? 'Running...' : 'Preview SQL'}
+                                            </Button>
+                                            <Button
+                                                onClick={() => void handleEnqueuePublish()}
+                                                disabled={publishLoading || saving}
+                                            >
+                                                <Rocket className="mr-1 h-3.5 w-3.5" />
+                                                {publishLoading ? 'Publishing...' : 'Queue Publish Task'}
+                                            </Button>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <p className="text-sm font-medium">Migration Plan</p>
+                                            <div className="rounded-lg border divide-y bg-background">
+                                                {publishPlanItems.length === 0 && (
+                                                    <div className="px-3 py-3 text-xs text-muted-foreground">Run Preview SQL to generate a visual migration plan.</div>
+                                                )}
+                                                {publishPlanItems.map((item, index) => (
+                                                    <div key={`${item.target}-${item.action}-${index}`} className="px-3 py-2 text-xs">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="rounded-full bg-muted px-2 py-0.5 font-medium">{item.action}</span>
+                                                            <span className="font-mono text-muted-foreground">{item.target}</span>
+                                                        </div>
+                                                        <p className="mt-1 text-foreground/90">{item.summary}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <p className="text-sm font-medium">Task Progress</p>
+                                            <div className="rounded-lg border divide-y bg-background">
+                                                {publishTasks.length === 0 && (
+                                                    <div className="px-3 py-3 text-xs text-muted-foreground">No publish tasks yet.</div>
+                                                )}
+                                                {publishTasks.map(task => (
+                                                    <div key={task.taskId} className="px-3 py-3 space-y-2">
+                                                        <div className="flex items-center justify-between gap-3 text-xs">
+                                                            <div className="min-w-0">
+                                                                <p className="font-mono truncate">{task.taskId}</p>
+                                                                <p className="text-muted-foreground">{task.message ?? task.status}</p>
+                                                            </div>
+                                                            <span className="rounded-full bg-muted px-2 py-0.5 font-medium">{task.status}</span>
+                                                        </div>
+                                                        <div className="h-2 rounded-full bg-muted overflow-hidden">
+                                                            <div className="h-full bg-primary transition-all" style={{ width: `${Math.max(0, Math.min(100, task.progress))}%` }} />
+                                                        </div>
+                                                        <p className="text-[11px] text-muted-foreground">{task.progress}%</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <p className="text-sm font-medium">Generated SQL</p>
+                                            <Textarea className="min-h-[220px] font-mono text-xs" value={publishScript} readOnly />
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </ScrollArea>
                     </TabsContent>

@@ -2,6 +2,13 @@ namespace PocketbaseNet.Api.Contracts;
 
 public record RecordCreateRequest(Dictionary<string, object?> Data);
 public record RecordUpdateRequest(Dictionary<string, object?> Data);
+public record RecordGraphCreateRequest(
+    Dictionary<string, object?> Data,
+    Dictionary<string, List<Dictionary<string, object?>>>? Children);
+
+public record RecordGraphCreateResponse(
+    RecordResponse Parent,
+    Dictionary<string, int> ChildrenCreated);
 
 /// <summary>
 /// Maps old JSON key names to new field names during a data-repair operation.

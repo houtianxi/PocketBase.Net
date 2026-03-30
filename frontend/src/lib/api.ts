@@ -46,6 +46,61 @@ export type CollectionItem = {
     updatedAt: string;
 };
 
+export type PublishPlanItem = {
+    type: string;
+    target: string;
+    action: string;
+    summary: string;
+    sql?: string;
+};
+
+export type PublishCollectionPreviewResponse = {
+    collectionId: string;
+    collectionSlug: string;
+    tableName: string;
+    status: string;
+    sqlScript: string;
+    schemaHash: string;
+    requestedAt: string;
+    message?: string;
+    planItems: PublishPlanItem[];
+};
+
+export type PublishCollectionEnqueueResponse = {
+    taskId: string;
+    collectionId: string;
+    collectionSlug: string;
+    hangfireJobId?: string;
+    status: string;
+    createdAt: string;
+};
+
+export type CollectionPublishStatus = {
+    collectionId: string;
+    tableName?: string;
+    isPublished: boolean;
+    schemaHash?: string;
+    lastPublishedAt?: string;
+    latestVersion?: number;
+    latestStatus?: string;
+};
+
+export type PublishTaskStatus = {
+    taskId: string;
+    collectionId: string;
+    collectionSlug: string;
+    hangfireJobId?: string;
+    status: string;
+    progress: number;
+    message?: string;
+    schemaHash?: string;
+    createdAt: string;
+    startedAt?: string;
+    finishedAt?: string;
+    planItems: PublishPlanItem[];
+    sqlScript?: string;
+};
+
 // Field types
 export const FieldType = {
     Text: 1,
