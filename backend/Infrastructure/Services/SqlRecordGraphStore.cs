@@ -111,6 +111,40 @@ public class SqlRecordGraphStore(SqlServerConnectionFactory connectionFactory)
         return new RecordGraphCreateResponse(parentResponse, childrenCreated);
     }
 
+    public async Task<List<Dictionary<string, object?>>> ListChildRowsAsync(
+        CollectionDefinition collection,
+        Guid parentId,
+        string childName,
+        CancellationToken cancellationToken = default)
+    {
+        if (!connectionFactory.IsSqlServerConfigured())
+            throw new InvalidOperationException("当前数据库未配置 SqlServer，无法读取主子表数据。");
+
+        var rootSchema = ParseChildren(collection.SchemaJson);
+        var childSchema = rootSchema.FirstOrDefault(c => string.Equals(c.Name, childName, StringComparison.OrdinalIgnoreCase))
+            ?? throw new InvalidOperationException($"未在 schemaJson.children 中定义子表 '{childName}'。");
+
+        var childTable = CollectionPublishService.BuildChildTableName(collection.Slug, childSchema.Name);
+        await using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+
+        var rows = await connection.QueryAsync(new CommandDefinition(
+            $"SELECT * FROM [dbo].[{childTable}] WHERE [ParentId] = @ParentId ORDER BY [CreatedAt] ASC;",
+            new { ParentId = parentId },
+            cancellationToken: cancellationToken));
+
+        var result = new List<Dictionary<string, object?>>();
+        foreach (var row in rows)
+        {
+            var dict = ((IDictionary<string, object?>)row)
+                .Where(kv => kv.Key is not "Id" and not "ParentId" and not "CreatedAt" and not "UpdatedAt" and not "DataJson")
+                .ToDictionary(kv => kv.Key, kv => kv.Value is DBNull ? null : kv.Value, StringComparer.OrdinalIgnoreCase);
+
+            result.Add(dict);
+        }
+
+        return result;
+    }
+
     private static string BuildInsertSql(
         string tableName,
         Dictionary<string, object?> data,

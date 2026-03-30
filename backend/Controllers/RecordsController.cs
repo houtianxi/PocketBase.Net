@@ -543,6 +543,24 @@ public class RecordsController(
         return Ok(ToResponseFromData(record, collectionSlug, data, null));
     }
 
+    [HttpGet("{id:guid}/graph-children/{childName}")]
+    public async Task<ActionResult<List<Dictionary<string, object?>>>> GetGraphChildren(string collectionSlug, Guid id, string childName)
+    {
+        var collection = await db.Collections
+            .Include(c => c.Fields)
+            .FirstOrDefaultAsync(x => x.Slug == collectionSlug);
+        if (collection is null)
+            throw new NotFoundException($"Collection '{collectionSlug}' not found");
+
+        if (!currentUser.ApiKeyCanAccessCollection(collectionSlug))
+            throw new ForbiddenException($"API key is not authorized to access collection '{collectionSlug}'.");
+        if (!currentUser.ApiKeyHasScope("view"))
+            throw new ForbiddenException("API key does not have 'view' scope.");
+
+        var rows = await sqlRecordGraphStore.ListChildRowsAsync(collection, id, childName);
+        return Ok(rows);
+    }
+
     [HttpGet("diagnose")]
     [Authorize]
     public async Task<ActionResult> DiagnoseCollection(string collectionSlug)

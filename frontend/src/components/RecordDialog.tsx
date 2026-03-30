@@ -969,6 +969,27 @@ export function RecordDialog({ open, collection, fields, record, onClose, onSave
     const [attachmentMetadataMap, setAttachmentMetadataMap] = useState<FileMetadataMap>({});
     const [childJsonByName, setChildJsonByName] = useState<Record<string, string>>({});
 
+    const loadTableRowsForEdit = async (recordId: string) => {
+        const tableFields = sortedFields.filter(f => f.type === FieldType.Table);
+        if (tableFields.length === 0) return;
+
+        const patch: Record<string, unknown> = {};
+        for (const field of tableFields) {
+            try {
+                const res = await api.get<Array<Record<string, unknown>>>(`/records/${collection.slug}/${recordId}/graph-children/${field.name}`);
+                patch[field.name] = Array.isArray(res.data)
+                    ? res.data.map((row, idx) => ({ __clientId: `${Date.now()}-${idx}`, ...row }))
+                    : [];
+            } catch {
+                patch[field.name] = [];
+            }
+        }
+
+        if (Object.keys(patch).length > 0) {
+            setData(prev => ({ ...prev, ...patch }));
+        }
+    };
+
     useEffect(() => {
         if (open) {
             const nextChildJson: Record<string, string> = {};
@@ -983,6 +1004,7 @@ export function RecordDialog({ open, collection, fields, record, onClose, onSave
                 // Normalize expanded relation objects back to IDs for the form
                 const normalized = normalizeRelationValuesForForm(rest, sortedFields);
                 setData(normalized);
+                void loadTableRowsForEdit(record.id);
                 void loadFileMetadata(normalized);
             } else {
                 const defaults: Record<string, unknown> = {};
