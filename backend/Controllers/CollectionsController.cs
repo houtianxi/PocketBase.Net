@@ -281,7 +281,7 @@ public class CollectionsController(
     /// Returns non-system fields with their types and properties
     /// </summary>
     [AllowAnonymous]
-    [HttpGet("{id:guid}/fields")]
+    [HttpGet("{id:guid}/fields-metadata")]
     public async Task<ActionResult<FieldsMetadataResponse>> GetFieldsMetadata(Guid id)
     {
         var collection = await db.Collections

@@ -478,6 +478,10 @@ END";
 
         foreach (var field in fields.OrderBy(f => f.DisplayOrder))
         {
+            // Skip Table type fields - they are relationship metadata only, not stored as columns
+            if (field.Type == FieldType.Table)
+                continue;
+
             columns.Add(new PublishColumnDefinition(field.Name, MapSqlType(field.Type), !field.IsRequired, field.IsUnique, ExtractRenameFrom(field.Config)));
         }
 
@@ -497,6 +501,10 @@ END";
 
         foreach (var field in child.Fields)
         {
+            // Skip Table type fields
+            if (field.Type == FieldType.Table)
+                continue;
+
             columns.Add(new PublishColumnDefinition(field.Name, MapSqlType(field.Type), !field.Required, field.Unique, field.RenameFrom));
         }
 
@@ -663,6 +671,7 @@ END";
             FieldType.AutoIncrement => "BIGINT",
             FieldType.Textarea => "NVARCHAR(2000)",
             FieldType.Text or FieldType.Email or FieldType.Url or FieldType.Select => "NVARCHAR(500)",
+            FieldType.Table => throw new InvalidOperationException("Table fields should not create database columns - they are relationship metadata only."),
             _ => "NVARCHAR(MAX)"
         };
     }

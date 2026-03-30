@@ -338,7 +338,7 @@ function FieldEditor({ initial, isNew, allCollections, collectionId, onSave, onC
                 return;
             }
             try {
-                const res = await api.get<{ fields: FieldMetadata[] }>(`/collections/${d.tableRelCollId}/fields`);
+                const res = await api.get<{ fields: FieldMetadata[] }>(`/collections/${d.tableRelCollId}/fields-metadata`);
                 setTableFields((res.data?.fields ?? []).filter(f => !f.isSystem));
             } catch {
                 setTableFields([]);
