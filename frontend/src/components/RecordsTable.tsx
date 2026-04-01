@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { Search, RotateCcw, Plus, Trash2, ChevronLeft, ChevronRight, ArrowUpDown, MoreHorizontal, Settings, Pencil, Code2, ChevronDown } from 'lucide-react';
+import { Search, RotateCcw, Plus, Trash2, ChevronLeft, ChevronRight, ArrowUpDown, MoreHorizontal, Settings, Pencil, Code2, ChevronDown, Radio, RadioOff } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -391,7 +391,9 @@ export function RecordsTable({ collection, schemaVersion = 0, onSettingsClick }:
     const [userLookup, setUserLookup] = useState<UserLookup>({});
     const [avatarMetadataMap, setAvatarMetadataMap] = useState<FileMetadataMap>({});
     const [attachmentMetadataMap, setAttachmentMetadataMap] = useState<FileMetadataMap>({});
+    const [liveUpdates, setLiveUpdates] = useState(true);
     const searchDebounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+    const eventSourceRef = useRef<EventSource | null>(null);
 
     useEffect(() => {
         loadFields();
@@ -423,6 +425,55 @@ export function RecordsTable({ collection, schemaVersion = 0, onSettingsClick }:
     useEffect(() => {
         void loadFileMetadataForPage();
     }, [paged.items, fields]);
+
+    // Real-time updates via Server-Sent Events (SSE)
+    useEffect(() => {
+        if (!liveUpdates) {
+            if (eventSourceRef.current) {
+                eventSourceRef.current.close();
+                eventSourceRef.current = null;
+            }
+            return;
+        }
+
+        try {
+            const url = `${api.defaults.baseURL}/records/${collection.slug}/subscribe`;
+            const eventSource = new EventSource(url);
+
+            eventSource.onmessage = (event) => {
+                try {
+                    const eventData = JSON.parse(event.data);
+                    if (eventData.action && ['create', 'update', 'delete', 'import'].includes(eventData.action)) {
+                        clearTimeout(searchDebounce.current);
+                        searchDebounce.current = setTimeout(() => {
+                            loadRecords();
+                        }, 500);
+                    }
+                } catch (err) {
+                    console.error('Error parsing SSE message:', err);
+                }
+            };
+
+            eventSource.onerror = () => {
+                console.warn('SSE connection error, attempting reconnect');
+                eventSource.close();
+                setTimeout(() => {
+                    if (liveUpdates && eventSourceRef.current === eventSource) {
+                        setLiveUpdates(false);
+                        setTimeout(() => setLiveUpdates(true), 1000);
+                    }
+                }, 3000);
+            };
+
+            eventSourceRef.current = eventSource;
+
+            return () => {
+                eventSource.close();
+            };
+        } catch (err) {
+            console.error('Failed to establish SSE connection:', err);
+        }
+    }, [liveUpdates, collection.slug]);
 
     const loadFields = async () => {
         try {
@@ -660,6 +711,15 @@ export function RecordsTable({ collection, schemaVersion = 0, onSettingsClick }:
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>Refresh</TooltipContent>
+                    </Tooltip>
+
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant={liveUpdates ? "default" : "ghost"} size="icon" className="h-8 w-8" onClick={() => setLiveUpdates(!liveUpdates)}>
+                                {liveUpdates ? <Radio className="h-4 w-4" /> : <RadioOff className="h-4 w-4" />}
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>{liveUpdates ? 'Live updates ON' : 'Live updates OFF'}</TooltipContent>
                     </Tooltip>
 
                     {selected.size > 0 && (
