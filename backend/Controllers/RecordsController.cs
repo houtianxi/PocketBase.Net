@@ -24,6 +24,11 @@ public class RecordsController(
     SqlRecordGraphStore sqlRecordGraphStore,
     AuditLogService auditLogService) : ControllerBase
 {
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        WriteIndented = false
+    };
     [HttpGet]
     public async Task<ActionResult<object>> List(
         string collectionSlug,
@@ -179,7 +184,7 @@ public class RecordsController(
             {
                 while (reader.TryRead(out var evt))
                 {
-                    var json = JsonSerializer.Serialize(evt);
+                    var json = JsonSerializer.Serialize(evt, JsonOptions);
                     await Response.WriteAsync($"data: {json}\n\n");
                     await Response.Body.FlushAsync();
                 }
