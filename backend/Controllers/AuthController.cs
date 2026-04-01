@@ -14,11 +14,18 @@ namespace PocketbaseNet.Api.Controllers;
 public class AuthController(
     UserManager<AppUser> userManager,
     SignInManager<AppUser> signInManager,
-    JwtTokenService jwtTokenService) : ControllerBase
+    JwtTokenService jwtTokenService,
+    Infrastructure.Services.ApplicationSettingsService settingsService) : ControllerBase
 {
     [HttpPost("register")]
     public async Task<ActionResult<AuthResponse>> Register(RegisterRequest request)
     {
+        var allowSelfRegistration = await settingsService.GetBoolConfigAsync("allowSelfRegistration", false);
+        if (!allowSelfRegistration)
+        {
+            throw new ApiException("Self registration is disabled", 403);
+        }
+
         var exists = await userManager.FindByEmailAsync(request.Email);
         if (exists is not null)
         {

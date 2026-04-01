@@ -90,6 +90,7 @@ public class FieldService
 
         _db.Fields.Add(field);
         await _db.SaveChangesAsync();
+        await SyncCollectionChildrenSchemaAsync(collectionId);
 
         return MapToResponse(field);
     }
@@ -164,6 +165,7 @@ public class FieldService
         field.UpdatedAt = DateTimeOffset.UtcNow;
 
         await _db.SaveChangesAsync();
+        await SyncCollectionChildrenSchemaAsync(field.CollectionDefinitionId);
 
         return MapToResponse(field);
     }
@@ -180,8 +182,10 @@ public class FieldService
         if (field.IsSystem)
             throw new InvalidOperationException("Cannot delete system fields");
 
+        var collectionId = field.CollectionDefinitionId;
         _db.Fields.Remove(field);
         await _db.SaveChangesAsync();
+        await SyncCollectionChildrenSchemaAsync(collectionId);
     }
 
     /// <summary>
@@ -385,5 +389,233 @@ public class FieldService
 
         // Field name must be alphanumeric + underscore, max 100 chars
         return name.Length <= 100 && System.Text.RegularExpressions.Regex.IsMatch(name, @"^[a-zA-Z_][a-zA-Z0-9_]*$");
+    }
+
+    private async Task SyncCollectionChildrenSchemaAsync(Guid collectionId)
+    {
+        var collection = await _db.Collections
+            .Include(c => c.Fields)
+            .FirstOrDefaultAsync(c => c.Id == collectionId);
+
+        if (collection is null)
+            return;
+
+        var root = ParseSchema(collection.SchemaJson);
+        var byName = root.Children.ToDictionary(c => c.Name, c => c, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var tableField in collection.Fields.Where(f => !f.IsSystem && f.Type == FieldType.Table))
+        {
+            var config = ParseTableConfig(tableField.Config);
+            var childName = ResolveChildName(tableField.Name, config);
+            if (string.IsNullOrWhiteSpace(childName))
+                continue;
+
+            var fields = await ResolveChildFieldsAsync(config);
+            byName[childName] = new ChildSchemaDto
+            {
+                Name = childName,
+                CascadeDelete = config.OnDeleteCascade,
+                RelatedCollectionSlug = string.IsNullOrWhiteSpace(config.RelatedCollectionSlug) ? null : config.RelatedCollectionSlug.Trim(),
+                ParentKey = config.ParentKey,
+                ChildKey = config.ChildKey,
+                Fields = fields
+            };
+        }
+
+        root.Children = byName.Values
+            .Where(c => !string.IsNullOrWhiteSpace(c.Name))
+            .OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        collection.SchemaJson = JsonSerializer.Serialize(root, JsonOptions);
+        collection.UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    private async Task<List<ChildFieldDto>> ResolveChildFieldsAsync(TableFieldConfigDto config)
+    {
+        var selected = config.SelectedFields
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Select(s => s.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var related = await ResolveRelatedCollectionAsync(config);
+        if (related is null)
+        {
+            return selected
+                .Select(name => new ChildFieldDto { Name = name, Type = FieldType.Text.ToString(), Required = false, Unique = false })
+                .ToList();
+        }
+
+        var candidateFields = related.Fields
+            .Where(f => !f.IsSystem && f.Type != FieldType.Table)
+            .ToList();
+
+        if (selected.Count > 0)
+        {
+            candidateFields = candidateFields
+                .Where(f => selected.Contains(f.Name, StringComparer.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        return candidateFields
+            .Select(f => new ChildFieldDto
+            {
+                Name = f.Name,
+                Type = f.Type.ToString(),
+                Required = f.IsRequired,
+                Unique = f.IsUnique
+            })
+            .OrderBy(f => f.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private async Task<CollectionDefinition?> ResolveRelatedCollectionAsync(TableFieldConfigDto config)
+    {
+        if (!string.IsNullOrWhiteSpace(config.RelatedCollectionSlug))
+        {
+            var bySlug = await _db.Collections
+                .Include(c => c.Fields)
+                .FirstOrDefaultAsync(c => c.Slug == config.RelatedCollectionSlug);
+            if (bySlug is not null)
+                return bySlug;
+        }
+
+        if (config.RelatedCollectionId is Guid relatedId)
+        {
+            return await _db.Collections
+                .Include(c => c.Fields)
+                .FirstOrDefaultAsync(c => c.Id == relatedId);
+        }
+
+        return null;
+    }
+
+    private static string ResolveChildName(string fieldName, TableFieldConfigDto config)
+    {
+        if (!string.IsNullOrWhiteSpace(config.ChildTableName))
+            return config.ChildTableName.Trim();
+        if (!string.IsNullOrWhiteSpace(config.RelatedCollectionSlug))
+            return config.RelatedCollectionSlug.Trim();
+        return fieldName.Trim();
+    }
+
+    private static CollectionSchemaDefinition ParseSchema(string? schemaJson)
+    {
+        if (string.IsNullOrWhiteSpace(schemaJson))
+            return new CollectionSchemaDefinition();
+
+        try
+        {
+            return JsonSerializer.Deserialize<CollectionSchemaDefinition>(schemaJson, JsonOptions) ?? new CollectionSchemaDefinition();
+        }
+        catch
+        {
+            return new CollectionSchemaDefinition();
+        }
+    }
+
+    private static TableFieldConfigDto ParseTableConfig(JsonElement config)
+    {
+        if (config.ValueKind != JsonValueKind.Object)
+            return new TableFieldConfigDto();
+
+        try
+        {
+            Guid? relatedCollectionId = null;
+            if (config.TryGetProperty("relatedCollectionId", out var idProp) && idProp.ValueKind == JsonValueKind.String)
+            {
+                if (Guid.TryParse(idProp.GetString(), out var parsedId))
+                    relatedCollectionId = parsedId;
+            }
+
+            var selectedFields = new List<string>();
+            if (config.TryGetProperty("selectedFields", out var selectedProp) && selectedProp.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in selectedProp.EnumerateArray())
+                {
+                    if (item.ValueKind == JsonValueKind.String)
+                    {
+                        var value = item.GetString();
+                        if (!string.IsNullOrWhiteSpace(value))
+                            selectedFields.Add(value);
+                    }
+                }
+            }
+
+            var relatedSlug = config.TryGetProperty("relatedCollectionSlug", out var slugProp)
+                ? slugProp.GetString() ?? string.Empty
+                : string.Empty;
+
+            var childTableName = config.TryGetProperty("childTableName", out var childTableProp)
+                ? childTableProp.GetString() ?? string.Empty
+                : string.Empty;
+
+            var parentKey = config.TryGetProperty("parentKey", out var parentKeyProp)
+                ? parentKeyProp.GetString() ?? "Id"
+                : "Id";
+
+            var childKey = config.TryGetProperty("childKey", out var childKeyProp)
+                ? childKeyProp.GetString() ?? "ParentId"
+                : "ParentId";
+
+            var cascade = config.TryGetProperty("onDeleteCascade", out var cascadeProp)
+                ? cascadeProp.ValueKind == JsonValueKind.True
+                : true;
+
+            return new TableFieldConfigDto
+            {
+                RelatedCollectionId = relatedCollectionId,
+                RelatedCollectionSlug = relatedSlug,
+                ChildTableName = childTableName,
+                ParentKey = string.IsNullOrWhiteSpace(parentKey) ? "Id" : parentKey.Trim(),
+                ChildKey = string.IsNullOrWhiteSpace(childKey) ? "ParentId" : childKey.Trim(),
+                OnDeleteCascade = cascade,
+                SelectedFields = selectedFields
+            };
+        }
+        catch
+        {
+            return new TableFieldConfigDto();
+        }
+    }
+
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
+    private sealed class CollectionSchemaDefinition
+    {
+        public List<ChildSchemaDto> Children { get; set; } = [];
+    }
+
+    private sealed class ChildSchemaDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public bool CascadeDelete { get; set; } = true;
+        public string? RelatedCollectionSlug { get; set; }
+        public string ParentKey { get; set; } = "Id";
+        public string ChildKey { get; set; } = "ParentId";
+        public List<ChildFieldDto> Fields { get; set; } = [];
+    }
+
+    private sealed class ChildFieldDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Type { get; set; } = FieldType.Text.ToString();
+        public bool Required { get; set; }
+        public bool Unique { get; set; }
+    }
+
+    private sealed class TableFieldConfigDto
+    {
+        public Guid? RelatedCollectionId { get; init; }
+        public string RelatedCollectionSlug { get; init; } = string.Empty;
+        public string ChildTableName { get; init; } = string.Empty;
+        public string ParentKey { get; init; } = "Id";
+        public string ChildKey { get; init; } = "ParentId";
+        public bool OnDeleteCascade { get; init; } = true;
+        public List<string> SelectedFields { get; init; } = [];
     }
 }

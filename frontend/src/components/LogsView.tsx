@@ -5,6 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
 
 type AuditLog = {
     id: string;
@@ -28,12 +29,14 @@ const ActionColors: Record<string, string> = {
     'users.create': 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
     'users.update': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
     'users.delete': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    'application-settings.update': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
     'fields.create': 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
     'fields.update': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
     'fields.delete': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
 };
 
 export function LogsView() {
+    const { t } = useI18n();
     const [logs, setLogs] = useState<AuditLog[]>([]);
     const [loading, setLoading] = useState(false);
     const [page, setPage] = useState(1);
@@ -128,19 +131,19 @@ export function LogsView() {
         <div className="flex h-full flex-col">
             {/* Header */}
             <div className="border-b px-6 py-4">
-                <h1 className="text-lg font-semibold">Logs</h1>
+                <h1 className="text-lg font-semibold">{t('logsTitle')}</h1>
                 <p className="text-sm text-muted-foreground mt-0.5">
-                    View and manage audit logs of all system activities
+                    {t('logsSubtitle')}
                 </p>
             </div>
 
             {/* Toolbar */}
             <div className="flex items-center gap-1.5 border-b bg-background px-3 py-1.5">
-                <div className="relative flex-1 max-w-[560px]">
+                <div className="relative flex-1 max-w-140">
                     <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
                     <input
                         className="h-8 w-full rounded-md border bg-transparent pl-8 pr-3 text-[13px] placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                        placeholder="Search logs (action, resource type)..."
+                        placeholder={t('logsSearchPlaceholder')}
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                     />
@@ -153,16 +156,16 @@ export function LogsView() {
                 {selected.size > 0 && (
                     <Button variant="destructive" size="sm" className="h-8 gap-1.5 text-[12px]" onClick={() => setDeleteSelectedOpen(true)}>
                         <Trash2 className="h-3.5 w-3.5" />
-                        Delete {selected.size}
+                        {t('logsDeleteSelected')} ({selected.size})
                     </Button>
                 )}
 
                 <Button variant="outline" size="sm" className="h-8 text-[12px]" onClick={() => setDeletingOldOpen(true)}>
-                    Delete older than 30 days
+                    {t('logsDeleteOlderThan30Days')}
                 </Button>
 
                 <Button variant="outline" size="sm" className="h-8 text-[12px] text-destructive" onClick={() => setDeleteAllOpen(true)}>
-                    Delete all
+                    {t('logsDeleteAll')}
                 </Button>
             </div>
 
@@ -181,17 +184,17 @@ export function LogsView() {
                                     className={someChecked && !allChecked ? 'opacity-50' : ''}
                                 />
                             </th>
-                            {['Timestamp', 'Action', 'Resource', 'Resource ID', 'Actor'].map(h => (
+                            {[t('logsTimestamp'), t('logsAction'), t('logsResource'), t('logsResourceId'), t('logsActor')].map(h => (
                                 <th key={h} className="px-3 py-2.5 text-left font-medium text-xs text-muted-foreground whitespace-nowrap">{h}</th>
                             ))}
                         </tr>
                     </thead>
                     <tbody className="divide-y">
                         {loading ? (
-                            <tr><td colSpan={6} className="px-4 py-10 text-center text-muted-foreground text-sm">Loading...</td></tr>
+                            <tr><td colSpan={6} className="px-4 py-10 text-center text-muted-foreground text-sm">{t('logsLoading')}</td></tr>
                         ) : logs.length === 0 ? (
                             <tr><td colSpan={6} className="px-4 py-16 text-center text-muted-foreground text-sm">
-                                {search ? 'No logs match your search' : 'No logs yet'}
+                                {search ? t('logsNoSearchResult') : t('logsEmpty')}
                             </td></tr>
                         ) : (
                             logs.map(log => (
@@ -212,7 +215,7 @@ export function LogsView() {
                                     <td className="px-3 py-2">
                                         <span className="inline-flex rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{log.resourceId.substring(0, 8)}</span>
                                     </td>
-                                    <td className="px-3 py-2 text-xs text-muted-foreground">{log.actorId?.substring(0, 8) || '—'}</td>
+                                    <td className="px-3 py-2 text-xs text-muted-foreground">{log.actorId?.substring(0, 8) || t('logsUnknownActor')}</td>
                                 </tr>
                             ))
                         )}
@@ -222,7 +225,7 @@ export function LogsView() {
 
             {/* Footer / Pagination */}
             <div className="flex items-center justify-between border-t px-4 py-2 text-xs text-muted-foreground bg-background">
-                <span>Total logs: {total}</span>
+                <span>{t('logsTotal')}: {total}</span>
                 <div className="flex items-center gap-2">
                     <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}>
                         <ChevronLeft className="h-3.5 w-3.5" />
@@ -238,15 +241,15 @@ export function LogsView() {
             <Dialog open={deleteAllOpen} onOpenChange={setDeleteAllOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Delete all logs?</DialogTitle>
+                        <DialogTitle>{t('logsDeleteAllConfirmTitle')}</DialogTitle>
                         <DialogDescription>
-                            This will permanently delete all {total} audit logs. This action cannot be undone.
+                            {t('logsDeleteAllConfirmDesc')}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setDeleteAllOpen(false)} disabled={deleting}>Cancel</Button>
+                        <Button variant="outline" onClick={() => setDeleteAllOpen(false)} disabled={deleting}>{t('usersCancel')}</Button>
                         <Button variant="destructive" onClick={() => void handleDeleteAll()} disabled={deleting}>
-                            {deleting ? 'Deleting...' : 'Delete All'}
+                            {deleting ? t('deleting') : t('logsDeleteAll')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -258,13 +261,13 @@ export function LogsView() {
                     <DialogHeader>
                         <DialogTitle>Delete {selected.size} log{selected.size !== 1 ? 's' : ''}?</DialogTitle>
                         <DialogDescription>
-                            This will permanently delete the selected audit logs. This action cannot be undone.
+                            {t('logsDeleteSelectedConfirmDesc')}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setDeleteSelectedOpen(false)} disabled={deleting}>Cancel</Button>
+                        <Button variant="outline" onClick={() => setDeleteSelectedOpen(false)} disabled={deleting}>{t('usersCancel')}</Button>
                         <Button variant="destructive" onClick={() => void handleDeleteSelected()} disabled={deleting}>
-                            {deleting ? 'Deleting...' : 'Delete Selected'}
+                            {deleting ? t('deleting') : t('logsDeleteSelected')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -274,14 +277,14 @@ export function LogsView() {
             <Dialog open={deletingOldOpen} onOpenChange={setDeletingOldOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Delete logs older than</DialogTitle>
+                        <DialogTitle>{t('logsDeleteOlderThanTitle')}</DialogTitle>
                         <DialogDescription>
-                            Permanently delete all logs older than the selected number of days.
+                            {t('logsDeleteOlderThanDesc')}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Days old</label>
+                            <label className="text-sm font-medium">{t('logsDaysOld')}</label>
                             <input
                                 type="number"
                                 min="1"
@@ -293,9 +296,9 @@ export function LogsView() {
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setDeletingOldOpen(false)} disabled={deleting}>Cancel</Button>
+                        <Button variant="outline" onClick={() => setDeletingOldOpen(false)} disabled={deleting}>{t('usersCancel')}</Button>
                         <Button variant="destructive" onClick={() => void handleDeleteOlderThan()} disabled={deleting}>
-                            {deleting ? 'Deleting...' : 'Delete'}
+                            {deleting ? t('deleting') : t('delete')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

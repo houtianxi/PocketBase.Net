@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { Search, RotateCcw, Plus, Trash2, ChevronLeft, ChevronRight, ArrowUpDown, MoreHorizontal, Settings, Pencil, Code2 } from 'lucide-react';
+import { Search, RotateCcw, Plus, Trash2, ChevronLeft, ChevronRight, ArrowUpDown, MoreHorizontal, Settings, Pencil, Code2, ChevronDown } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -28,6 +28,41 @@ type FileMetadataMap = Record<string, FileMetadata>;
 function getFieldDisplayText(field: Pick<Field, 'name' | 'label' | 'description'>): string {
     return field.description?.trim() || field.label?.trim() || field.name;
 }
+
+function GetTableColumns(items: Record<string, unknown>[]): string[] {
+    // Collect union of keys from all items, maintaining order
+    const keySet = new Set<string>();
+    for (const item of items) {
+        for (const key of Object.keys(item)) {
+            keySet.add(key);
+        }
+    }
+    // Filter out system fields and sort for consistency
+    return Array.from(keySet)
+        .filter(k => !['id', 'created', 'updated'].includes(k.toLowerCase()))
+        .sort();
+}
+
+function TruncatedText({ value, maxLength = 50 }: { value: unknown; maxLength?: number }): React.ReactNode {
+    const text = String(value || '').trim();
+    if (!text) return <span className="text-muted-foreground italic">—</span>;
+
+    if (text.length > maxLength) {
+        return (
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <span className="cursor-help inline-block truncate">{text.slice(0, maxLength - 3)}…</span>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs break-words">
+                    {text}
+                </TooltipContent>
+            </Tooltip>
+        );
+    }
+    return text;
+}
+
+
 
 function parseFieldConfig(config: unknown): Record<string, unknown> {
     try {
@@ -144,8 +179,8 @@ function RelationCardValue({ items }: { items: RelationCardData[] }) {
                     "dark:from-slate-950 dark:via-slate-950 dark:to-slate-900/40",
                     "hover:shadow-md"
                 )}>
-                    <div className="rounded-t-xl bg-white/95 px-3.5 py-1.5 dark:bg-slate-100/95">
-                        <div className="truncate text-[12px] font-semibold tracking-wide text-slate-800 dark:text-slate-900">{item.title}</div>
+                    <div className="rounded-t-xl bg-white/95 px-3.5 py-1.5 dark:bg-slate-900/95">
+                        <div className="truncate text-[12px] font-semibold tracking-wide text-slate-800 dark:text-slate-100">{item.title}</div>
                     </div>
                     {item.lines.length > 0 ? (
                         <div className="pb-2 pt-1">
@@ -208,6 +243,40 @@ function formatCellValue(
     fileMetadataMap?: FileMetadataMap,
 ): React.ReactNode {
     if (value === null || value === undefined) return <span className="text-muted-foreground italic">null</span>;
+
+    // Handle Table field type — display summary of child records
+    if (fieldType === FieldType.Table) {
+        if (!Array.isArray(value)) return <span className="text-muted-foreground italic">—</span>;
+
+        const items = value as Array<Record<string, unknown>>;
+        if (items.length === 0) {
+            return <span className="text-muted-foreground italic">no items</span>;
+        }
+
+        // Display count and preview
+        return (
+            <div className="flex flex-col gap-1.5">
+                <span className="inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-secondary-foreground">
+                    {items.length} row{items.length !== 1 ? 's' : ''}
+                </span>
+                {items.length > 0 && (
+                    <div className="text-xs text-muted-foreground max-w-[180px] line-clamp-2">
+                        {/* Show first non-system field value from first row as preview */}
+                        {items.slice(0, 1).map((item, idx) => {
+                            const previewValue = Object.entries(item)
+                                .find(([k]) => !['id', 'created', 'updated'].includes(k.toLowerCase()))?.[1];
+                            return previewValue ? (
+                                <span key={idx}>
+                                    {String(previewValue).slice(0, 30)}…
+                                </span>
+                            ) : null;
+                        })}
+                    </div>
+                )}
+            </div>
+        );
+    }
+
     if (fieldType === FieldType.Checkbox) {
         return (
             <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium', value ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400')}>
@@ -306,6 +375,7 @@ function formatDateTime(iso: string) {
 }
 
 export function RecordsTable({ collection, schemaVersion = 0, onSettingsClick }: RecordsTableProps) {
+    const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
     const [fields, setFields] = useState<Field[]>([]);
     const [paged, setPaged] = useState<PagedRecordResponse>({ page: 1, perPage: 20, totalItems: 0, totalPages: 0, items: [] });
     const [page, setPage] = useState(1);
@@ -549,6 +619,16 @@ export function RecordsTable({ collection, schemaVersion = 0, onSettingsClick }:
     const allChecked = paged.items.length > 0 && paged.items.every(r => selected.has(r.id));
     const someChecked = paged.items.some(r => selected.has(r.id));
 
+    const tableFields = useMemo(() => fields.filter(f => f.type === FieldType.Table), [fields]);
+
+    const toggleExpanded = (id: string) => {
+        setExpandedRows(s => {
+            const n = new Set(s);
+            if (n.has(id)) n.delete(id); else n.add(id);
+            return n;
+        });
+    };
+
     // Columns: id + custom fields + created + updated
     const columns: { key: string; label: string; fieldType?: FieldType; icon?: string }[] = [
         { key: 'id', label: 'id', icon: '🔑' },
@@ -640,64 +720,145 @@ export function RecordsTable({ collection, schemaVersion = 0, onSettingsClick }:
                                 </td></tr>
                             ) : (
                                 paged.items.map(record => (
-                                    <tr key={record.id} className={cn('group hover:bg-accent/50 cursor-pointer transition-colors', selected.has(record.id) && 'bg-primary/5')}>
-                                        <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
-                                            <Checkbox
-                                                checked={selected.has(record.id)}
-                                                onCheckedChange={v => setSelected(s => { const n = new Set(s); v ? n.add(record.id) : n.delete(record.id); return n; })}
-                                            />
-                                        </td>
-                                        {columns.map(col => {
-                                            const isAvatarField = col.fieldType === FieldType.Avatar;
-                                            const cellValue = getFieldValue(record.data, col.key);
-                                            const avatarUrl = isAvatarField ? extractAvatarUrl(cellValue) : null;
-                                            const avatarStoredName = isAvatarField && typeof cellValue === 'string' ? cellValue : '';
-                                            const avatarDisplayName = avatarStoredName ? (avatarMetadataMap[avatarStoredName]?.originalFileName || avatarStoredName) : '';
+                                    <>
+                                        <tr key={record.id} className={cn('group hover:bg-accent/50 cursor-pointer transition-colors', selected.has(record.id) && 'bg-primary/5')}>
+                                            <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
+                                                <Checkbox
+                                                    checked={selected.has(record.id)}
+                                                    onCheckedChange={v => setSelected(s => { const n = new Set(s); v ? n.add(record.id) : n.delete(record.id); return n; })}
+                                                />
+                                            </td>
+                                            {columns.map(col => {
+                                                const isAvatarField = col.fieldType === FieldType.Avatar;
+                                                const cellValue = getFieldValue(record.data, col.key);
+                                                const avatarUrl = isAvatarField ? extractAvatarUrl(cellValue) : null;
+                                                const avatarStoredName = isAvatarField && typeof cellValue === 'string' ? cellValue : '';
+                                                const avatarDisplayName = avatarStoredName ? (avatarMetadataMap[avatarStoredName]?.originalFileName || avatarStoredName) : '';
 
-                                            return (
-                                                <td key={col.key} className="px-3 py-2 max-w-[200px] truncate" onClick={() => setEditRecord(record)}>
-                                                    {col.key === 'id' ? (
-                                                        <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
-                                                            {String(cellValue ?? record.id).slice(0, 8)}
-                                                        </span>
-                                                    ) : col.key === 'created' ? formatDateTime(record.createdAt) :
-                                                        col.key === 'updated' ? formatDateTime(record.updatedAt) :
-                                                            isAvatarField && avatarUrl ? (
-                                                                <button
-                                                                    type="button"
-                                                                    className="inline-flex"
-                                                                    onClick={e => {
-                                                                        e.stopPropagation();
-                                                                        setPreviewImageUrl(avatarUrl);
-                                                                    }}
-                                                                >
-                                                                    <img src={avatarUrl} alt="avatar" title={avatarDisplayName} className="h-8 w-8 rounded-full object-cover border" />
-                                                                </button>
-                                                            ) : (
-                                                                formatCellValue(cellValue, col.fieldType, fieldRelationLookups[col.key], userLookup, attachmentMetadataMap)
-                                                            )}
+                                                return (
+                                                    <td key={col.key} className="px-3 py-2 max-w-[200px] truncate" onClick={() => setEditRecord(record)}>
+                                                        {col.key === 'id' ? (
+                                                            <div className="inline-flex items-center gap-2">
+                                                                {/* Expand control for records that have Table-type data */}
+                                                                {tableFields.length > 0 && tableFields.some(tf => {
+                                                                    const v = getFieldValue(record.data, tf.name);
+                                                                    return Array.isArray(v) && v.length > 0;
+                                                                }) ? (
+                                                                    <button onClick={e => { e.stopPropagation(); toggleExpanded(record.id); }} className="p-1 rounded hover:bg-muted/50">
+                                                                        {expandedRows.has(record.id) ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                                                    </button>
+                                                                ) : <span className="w-4 inline-block" />}
+
+                                                                <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+                                                                    {String(cellValue ?? record.id).slice(0, 8)}
+                                                                </span>
+                                                            </div>
+                                                        ) : col.key === 'created' ? formatDateTime(record.createdAt) :
+                                                            col.key === 'updated' ? formatDateTime(record.updatedAt) :
+                                                                isAvatarField && avatarUrl ? (
+                                                                    <button
+                                                                        type="button"
+                                                                        className="inline-flex"
+                                                                        onClick={e => {
+                                                                            e.stopPropagation();
+                                                                            setPreviewImageUrl(avatarUrl);
+                                                                        }}
+                                                                    >
+                                                                        <img src={avatarUrl} alt="avatar" title={avatarDisplayName} className="h-8 w-8 rounded-full object-cover border" />
+                                                                    </button>
+                                                                ) : (
+                                                                    formatCellValue(cellValue, col.fieldType, fieldRelationLookups[col.key], userLookup, attachmentMetadataMap)
+                                                                )}
+                                                    </td>
+                                                );
+                                            })}
+                                            <td className="px-2 py-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-7 w-7">
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem onClick={() => setEditRecord(record)}>
+                                                            <Pencil className="mr-2 h-3.5 w-3.5" />Edit
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem className="text-destructive" onClick={() => deleteRecord(record.id)}>
+                                                            <Trash2 className="mr-2 h-3.5 w-3.5" />Delete
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </td>
+                                        </tr>
+
+                                        {/* Expanded child table row - improved UI with cards */}
+                                        {expandedRows.has(record.id) && tableFields.length > 0 ? (
+                                            <tr key={`${record.id}-children`} className="bg-gradient-to-b from-accent/20 to-accent/5 hover:bg-accent/30 transition-colors">
+                                                <td colSpan={columns.length + 2} className="px-4 py-4">
+                                                    {/* Render each Table field's child items */}
+                                                    {tableFields.map(tf => {
+                                                        const v = getFieldValue(record.data, tf.name);
+                                                        if (!Array.isArray(v) || v.length === 0) return null;
+
+                                                        const items: Record<string, unknown>[] = v as Record<string, unknown>[];
+                                                        const fieldDisplayName = getFieldDisplayText(tf);
+
+                                                        return (
+                                                            <div key={tf.id} className="mb-4 last:mb-0">
+                                                                {/* Header with count badge */}
+                                                                <div className="flex items-center gap-2.5 mb-3">
+                                                                    <h4 className="text-sm font-semibold text-foreground">{fieldDisplayName}</h4>
+                                                                    <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                                                                        {items.length} row{items.length !== 1 ? 's' : ''}
+                                                                    </span>
+                                                                </div>
+
+                                                                {/* Improved table with better styling */}
+                                                                <div className="overflow-x-auto rounded-lg border border-border/50 bg-card">
+                                                                    <table className="w-full text-sm border-collapse">
+                                                                        <thead>
+                                                                            <tr className="border-b bg-muted/40 hover:bg-muted/60 transition-colors">
+                                                                                {GetTableColumns(items).map((col, idx) => (
+                                                                                    <th
+                                                                                        key={`${col}-${idx}`}
+                                                                                        className="px-3 py-2.5 text-left text-xs font-semibold text-foreground/70 whitespace-nowrap bg-muted/30"
+                                                                                    >
+                                                                                        {col}
+                                                                                    </th>
+                                                                                ))}
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody className="divide-y">
+                                                                            {items.map((it, idx) => (
+                                                                                <tr
+                                                                                    key={idx}
+                                                                                    className={cn(
+                                                                                        'hover:bg-accent/30 transition-colors',
+                                                                                        idx % 2 === 0 ? 'bg-transparent' : 'bg-muted/[0.02]'
+                                                                                    )}
+                                                                                >
+                                                                                    {GetTableColumns(items).map((col, colIdx) => (
+                                                                                        <td
+                                                                                            key={`${col}-${colIdx}`}
+                                                                                            className="px-3 py-2 text-xs text-foreground/80 max-w-[200px]"
+                                                                                            title={String(it[col] ?? '')}
+                                                                                        >
+                                                                                            <TruncatedText value={it[col]} maxLength={50} />
+                                                                                        </td>
+                                                                                    ))}
+                                                                                </tr>
+                                                                            ))}
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </td>
-                                            );
-                                        })}
-                                        <td className="px-2 py-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-7 w-7">
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem onClick={() => setEditRecord(record)}>
-                                                        <Pencil className="mr-2 h-3.5 w-3.5" />Edit
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem className="text-destructive" onClick={() => deleteRecord(record.id)}>
-                                                        <Trash2 className="mr-2 h-3.5 w-3.5" />Delete
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </td>
-                                    </tr>
+                                            </tr>
+                                        ) : null}
+                                    </>
                                 ))
                             )}
                         </tbody>

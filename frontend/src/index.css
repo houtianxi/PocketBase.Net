@@ -133,3 +133,31 @@ body {
   font-size: 14px;
   line-height: 1.6;
 }
+
+.dark .record-rich-editor .ql-toolbar.ql-snow {
+  border-bottom-color: hsl(var(--border));
+  background: hsl(var(--muted) / 0.5);
+}
+
+.dark .record-rich-editor .ql-container.ql-snow {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+.dark .record-rich-editor .ql-snow .ql-stroke {
+  stroke: hsl(var(--foreground));
+}
+
+.dark .record-rich-editor .ql-snow .ql-fill {
+  fill: hsl(var(--foreground));
+}
+
+.dark .record-rich-editor .ql-snow .ql-picker {
+  color: hsl(var(--foreground));
+}
+
+.dark .record-rich-editor .ql-snow .ql-picker-options {
+  background: hsl(var(--popover));
+  border-color: hsl(var(--border));
+  color: hsl(var(--popover-foreground));
+}

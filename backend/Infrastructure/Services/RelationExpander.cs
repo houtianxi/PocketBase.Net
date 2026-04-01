@@ -10,10 +10,12 @@ namespace PocketbaseNet.Api.Infrastructure.Services;
 public class RelationExpander
 {
     private readonly AppDbContext _db;
+    private readonly SqlRecordStore _sqlRecordStore;
 
-    public RelationExpander(AppDbContext db)
+    public RelationExpander(AppDbContext db, SqlRecordStore sqlRecordStore)
     {
         _db = db;
+        _sqlRecordStore = sqlRecordStore;
     }
 
     /// <summary>
@@ -176,5 +178,220 @@ public class RelationExpander
             .Where(f => f.Type == Domain.Enums.FieldType.Relation)
             .Select(f => f.Name)
             .ToList();
+    }
+
+    /// <summary>
+    /// Returns the names of every Table-typed字段 in the collection.
+    /// </summary>
+    public static List<string> GetAllTableFieldNames(List<Field> fields)
+    {
+        return fields
+            .Where(f => f.Type == Domain.Enums.FieldType.Table)
+            .Select(f => f.Name)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Automatically expand Table-type fields (e.g., OrderDetail child table).
+    /// Handles both draft and published child collections with proper error handling.
+    /// </summary>
+    public async Task<Dictionary<string, object?>> ExpandTables(
+        Dictionary<string, object?> recordData,
+        List<Field> collectionFields,
+        Guid parentRecordId)
+    {
+        var result = new Dictionary<string, object?>(recordData);
+        
+        foreach (var field in collectionFields.Where(f => f.Type == Domain.Enums.FieldType.Table))
+        {
+            try
+            {
+                // Parse Table field config
+                var config = ParseTableFieldConfig(field);
+                
+                // Get related collection slug
+                if (!config.TryGetValue("relatedCollectionSlug", out var relatedSlugObj))
+                    continue;
+                var relatedSlug = relatedSlugObj?.ToString();
+                if (string.IsNullOrWhiteSpace(relatedSlug))
+                    continue;
+
+                // Get parent/child key field names
+                var parentKey = config.TryGetValue("parentKey", out var pkObj) ? pkObj?.ToString() ?? "Id" : "Id";
+                var childKey = config.TryGetValue("childKey", out var ckObj) ? ckObj?.ToString() ?? "ParentId" : "ParentId";
+
+                // Determine the parent key value to match against child records
+                string parentKeyValue = DetermineParentKeyValue(recordData, parentKey, parentRecordId);
+                if (string.IsNullOrWhiteSpace(parentKeyValue))
+                    continue;
+
+                // Fetch related collection definition
+                var relatedCollection = await _db.Collections
+                    .Include(c => c.Fields)
+                    .FirstOrDefaultAsync(c => c.Slug == relatedSlug);
+                if (relatedCollection == null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[ExpandTables] Related collection not found: {relatedSlug} (field: {field.Name})");
+                    continue;
+                }
+
+                // Load child records based on publish status
+                var childList = new List<Dictionary<string, object?>>();
+                
+                try
+                {
+                    if (await _sqlRecordStore.IsPublishedAsync(relatedCollection.Id))
+                    {
+                        await LoadPublishedChildRecords(childList, relatedCollection, childKey, parentKeyValue);
+                    }
+                    else
+                    {
+                        await LoadDraftChildRecords(childList, relatedCollection, childKey, parentKeyValue);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[ExpandTables] Failed to load children for table field '{field.Name}' in collection '{relatedSlug}': {ex.Message}");
+                    // Continue with empty list rather than failing the entire request
+                    childList = new();
+                }
+
+                result[field.Name] = childList;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ExpandTables] Unexpected error processing table field '{field.Name}': {ex.Message}");
+                // Set to empty array on unexpected error to avoid breaking API response
+                result[field.Name] = new List<Dictionary<string, object?>>();
+            }
+        }
+        
+        return result;
+    }
+
+    private Dictionary<string, object?> ParseTableFieldConfig(Field field)
+    {
+        try
+        {
+            string configJson = field.Config.ValueKind == JsonValueKind.Null || field.Config.ValueKind == JsonValueKind.Undefined
+                ? "{}"
+                : field.Config.GetRawText();
+            return JsonSerializer.Deserialize<Dictionary<string, object?>>(configJson) ?? new();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ParseTableFieldConfig] Failed to parse config for field '{field.Name}': {ex.Message}");
+            return new();
+        }
+    }
+
+    private string DetermineParentKeyValue(Dictionary<string, object?> recordData, string parentKey, Guid parentRecordId)
+    {
+        if (!string.Equals(parentKey, "Id", StringComparison.OrdinalIgnoreCase))
+        {
+            if (recordData.TryGetValue(parentKey, out var parentKeyObj) && parentKeyObj != null)
+            {
+                var value = NormalizeObjectValue(parentKeyObj).ToString();
+                if (!string.IsNullOrWhiteSpace(value))
+                    return value;
+            }
+        }
+        return parentRecordId.ToString();
+    }
+
+    private object NormalizeObjectValue(object? value)
+    {
+        if (value is JsonElement je)
+        {
+            return je.ValueKind == JsonValueKind.String ? (je.GetString() ?? "") :
+                   je.ValueKind == JsonValueKind.Number ? je.GetDecimal() :
+                   je.ValueKind == JsonValueKind.True ? true :
+                   je.ValueKind == JsonValueKind.False ? false :
+                   value ?? "";
+        }
+        return value ?? "";
+    }
+
+    private async Task LoadPublishedChildRecords(
+        List<Dictionary<string, object?>> childList,
+        CollectionDefinition relatedCollection,
+        string childKey,
+        string parentKeyValue)
+    {
+        try
+        {
+            var childEntities = await _sqlRecordStore.ListAsync(relatedCollection);
+            foreach (var child in childEntities)
+            {
+                try
+                {
+                    var childData = JsonSerializer.Deserialize<Dictionary<string, object?>>(child.DataJson) ?? new();
+                    if (!childData.TryGetValue(childKey, out var fkVal) || fkVal == null)
+                        continue;
+
+                    var fkNormalized = NormalizeObjectValue(fkVal).ToString() ?? "";
+                    if (!string.Equals(fkNormalized, parentKeyValue, StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    childData["id"] = child.Id;
+                    childData["created"] = child.CreatedAt;
+                    childData["updated"] = child.UpdatedAt;
+                    childList.Add(childData);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[LoadPublishedChildRecords] Failed to process child record {child.Id}: {ex.Message}");
+                    // Continue processing other records
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[LoadPublishedChildRecords] Failed to list published records from {relatedCollection.Slug}: {ex.Message}");
+            throw;
+        }
+    }
+
+    private async Task LoadDraftChildRecords(
+        List<Dictionary<string, object?>> childList,
+        CollectionDefinition relatedCollection,
+        string childKey,
+        string parentKeyValue)
+    {
+        try
+        {
+            var childRecords = await _db.Records
+                .Where(r => r.CollectionDefinitionId == relatedCollection.Id)
+                .ToListAsync();
+
+            foreach (var child in childRecords)
+            {
+                try
+                {
+                    var childData = JsonSerializer.Deserialize<Dictionary<string, object?>>(child.DataJson) ?? new();
+                    if (!childData.TryGetValue(childKey, out var fkVal) || fkVal == null)
+                        continue;
+
+                    var fkNormalized = NormalizeObjectValue(fkVal).ToString() ?? "";
+                    if (!string.Equals(fkNormalized, parentKeyValue, StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    childData["id"] = child.Id;
+                    childData["created"] = child.CreatedAt;
+                    childData["updated"] = child.UpdatedAt;
+                    childList.Add(childData);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[LoadDraftChildRecords] Failed to process draft record {child.Id}: {ex.Message}");
+                    // Continue processing other records
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[LoadDraftChildRecords] Failed to list draft records from {relatedCollection.Slug}: {ex.Message}");
+            throw;
+        }
     }
 }

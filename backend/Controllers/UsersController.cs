@@ -4,13 +4,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PocketbaseNet.Api.Domain.Entities;
 using PocketbaseNet.Api.Infrastructure;
+using PocketbaseNet.Api.Infrastructure.Services;
 
 namespace PocketbaseNet.Api.Controllers;
 
 [ApiController]
 [Authorize(Roles = "Admin")]
 [Route("api/users")]
-public class UsersController(UserManager<AppUser> userManager, AppDbContext db) : ControllerBase
+public class UsersController(UserManager<AppUser> userManager, AppDbContext db, AuditLogService auditLogService) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<object>> List([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
@@ -62,7 +63,7 @@ public class UsersController(UserManager<AppUser> userManager, AppDbContext db) 
 
         await userManager.AddToRoleAsync(user, request.Role is "Admin" ? "Admin" : "User");
 
-        db.AuditLogs.Add(new AuditLog
+        await auditLogService.AddAsync(new AuditLog
         {
             ActorId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
             Action = "users.create",
@@ -111,7 +112,7 @@ public class UsersController(UserManager<AppUser> userManager, AppDbContext db) 
         }
         await userManager.AddToRoleAsync(user, request.Role is "Admin" ? "Admin" : "User");
 
-        db.AuditLogs.Add(new AuditLog
+        await auditLogService.AddAsync(new AuditLog
         {
             ActorId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
             Action = "users.update",
@@ -139,7 +140,7 @@ public class UsersController(UserManager<AppUser> userManager, AppDbContext db) 
             return BadRequest(new { message = "Delete failed", errors = result.Errors.Select(e => e.Description) });
         }
 
-        db.AuditLogs.Add(new AuditLog
+        await auditLogService.AddAsync(new AuditLog
         {
             ActorId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
             Action = "users.delete",

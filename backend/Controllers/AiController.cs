@@ -5,13 +5,14 @@ using PocketbaseNet.Api.Contracts;
 using PocketbaseNet.Api.Domain.Entities;
 using PocketbaseNet.Api.Infrastructure;
 using PocketbaseNet.Api.Infrastructure.Auth;
+using PocketbaseNet.Api.Infrastructure.Services;
 
 namespace PocketbaseNet.Api.Controllers;
 
 [ApiController]
 [Authorize]
 [Route("api/ai")]
-public class AiController(AppDbContext db, CurrentUserAccessor currentUser) : ControllerBase
+public class AiController(AppDbContext db, CurrentUserAccessor currentUser, AuditLogService auditLogService) : ControllerBase
 {
     [HttpPost("chat")]
     public async Task<ActionResult<AiSendResponse>> Chat([FromBody] AiSendRequest request)
@@ -70,7 +71,7 @@ public class AiController(AppDbContext db, CurrentUserAccessor currentUser) : Co
         db.AiMessages.Add(userMsg);
         db.AiMessages.Add(assistantMsg);
 
-        db.AuditLogs.Add(new AuditLog
+        await auditLogService.AddAsync(new AuditLog
         {
             ActorId = userId,
             Action = "ai.chat",

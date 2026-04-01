@@ -102,6 +102,71 @@ export type PublishTaskStatus = {
     sqlScript?: string;
 };
 
+export type ApiPreviewParameter = {
+    name: string;
+    location: string;
+    type: string;
+    required: boolean;
+    description: string;
+    example?: string;
+    allowedValues?: string[];
+};
+
+export type ApiPreviewEndpoint = {
+    key: string;
+    label: string;
+    method: string;
+    url: string;
+    summary: string;
+    parameters: ApiPreviewParameter[];
+    requestBodyExample?: string;
+    requestBodyDescription?: string;
+    requestExample?: string;
+    responseExample?: string;
+    notes: string[];
+};
+
+export type CollectionApiPreviewResponse = {
+    collectionId: string;
+    collectionName: string;
+    collectionSlug: string;
+    endpoints: ApiPreviewEndpoint[];
+};
+
+export type ApplicationStorageFolders = {
+    attachments: string;
+    avatars: string;
+    editorImages: string;
+};
+
+export type ApplicationSettings = {
+    appName: string;
+    appSubtitle: string;
+    appIconUrl: string;
+    siteTitle: string;
+    defaultLanguage: string;
+    supportedLanguages: string[];
+    primaryColor: string;
+    storageFolders: ApplicationStorageFolders;
+    systemConfig: Record<string, unknown>;
+    updatedAt: string;
+};
+
+export type ApplicationSettingsAuditChange = {
+    key: string;
+    oldValue: string;
+    newValue: string;
+};
+
+export type ApplicationSettingsAuditItem = {
+    id: string;
+    actorId?: string;
+    actorDisplayName: string;
+    actorEmail: string;
+    createdAt: string;
+    changes: ApplicationSettingsAuditChange[];
+};
+
 // Field types
 export const FieldType = {
     Text: 1,

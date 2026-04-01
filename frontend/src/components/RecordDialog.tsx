@@ -88,6 +88,40 @@ function parseFieldConfig(config: unknown): Record<string, unknown> {
     return {};
 }
 
+function resolveGraphChildName(field: Field, childDefinitions: ChildSchemaDefinition[]): string {
+    if (childDefinitions.some(c => c.name.toLowerCase() === field.name.toLowerCase())) {
+        return field.name;
+    }
+
+    const cfg = parseFieldConfig(field.config);
+    const relatedCollectionSlug = typeof cfg.relatedCollectionSlug === 'string' ? cfg.relatedCollectionSlug : '';
+    const childTableName = typeof cfg.childTableName === 'string' ? cfg.childTableName : '';
+    const childKey = typeof cfg.childKey === 'string' ? cfg.childKey : '';
+
+    const namedCandidate = childDefinitions.find(c =>
+        (relatedCollectionSlug && c.name.toLowerCase() === relatedCollectionSlug.toLowerCase())
+        || (childTableName && c.name.toLowerCase() === childTableName.toLowerCase())
+    );
+    if (namedCandidate) {
+        return namedCandidate.name;
+    }
+
+    if (childKey) {
+        const keyCandidate = childDefinitions.find(c =>
+            c.fields.some(f => f.name.toLowerCase() === childKey.toLowerCase())
+        );
+        if (keyCandidate) {
+            return keyCandidate.name;
+        }
+    }
+
+    if (childDefinitions.length === 1) {
+        return childDefinitions[0].name;
+    }
+
+    return field.name;
+}
+
 function getFieldDisplayText(field: Pick<Field, 'name' | 'label' | 'description'>): string {
     return field.description?.trim() || field.label?.trim() || field.name;
 }
@@ -474,8 +508,8 @@ function RelationField({ field, value, onChange, relationCollections }: {
                                 'dark:from-slate-950 dark:via-slate-950 dark:to-slate-900/40',
                                 'hover:shadow-md'
                             )}>
-                                <div className="rounded-t-xl bg-white/95 px-3.5 py-1.5 dark:bg-slate-100/95">
-                                    <div className="truncate text-[12px] font-semibold tracking-wide text-slate-800 dark:text-slate-900">{item.title}</div>
+                                <div className="rounded-t-xl bg-white/95 px-3.5 py-1.5 dark:bg-slate-900/95">
+                                    <div className="truncate text-[12px] font-semibold tracking-wide text-slate-800 dark:text-slate-100">{item.title}</div>
                                 </div>
                                 {item.lines.length > 0 ? (
                                     <div className="pb-2 pt-1">
@@ -976,7 +1010,8 @@ export function RecordDialog({ open, collection, fields, record, onClose, onSave
         const patch: Record<string, unknown> = {};
         for (const field of tableFields) {
             try {
-                const res = await api.get<Array<Record<string, unknown>>>(`/records/${collection.slug}/${recordId}/graph-children/${field.name}`);
+                const childName = resolveGraphChildName(field, childDefinitions);
+                const res = await api.get<Array<Record<string, unknown>>>(`/records/${collection.slug}/${recordId}/graph-children/${childName}`);
                 patch[field.name] = Array.isArray(res.data)
                     ? res.data.map((row, idx) => ({ __clientId: `${Date.now()}-${idx}`, ...row }))
                     : [];
@@ -1243,6 +1278,7 @@ export function RecordDialog({ open, collection, fields, record, onClose, onSave
             for (const field of sortedFields.filter(f => f.type === FieldType.Table)) {
                 const tableRows = data[field.name];
                 if (Array.isArray(tableRows)) {
+                    const childName = resolveGraphChildName(field, childDefinitions);
                     const rows = tableRows
                         .filter(item => item && typeof item === 'object')
                         .map(item => {
@@ -1251,7 +1287,7 @@ export function RecordDialog({ open, collection, fields, record, onClose, onSave
                             return row;
                         });
                     if (rows.length > 0) {
-                        childPayload[field.name] = rows;
+                        childPayload[childName] = rows;
                     }
                 }
                 delete (parentData as Record<string, unknown>)[field.name];
@@ -1264,24 +1300,27 @@ export function RecordDialog({ open, collection, fields, record, onClose, onSave
                     await api.put(`/records/${collection.slug}/${record.id}`, { data: parentData });
                 }
             } else {
-                for (const child of childDefinitions) {
-                    const raw = childJsonByName[child.name] ?? '[]';
-                    try {
-                        const parsed = JSON.parse(raw);
-                        if (!Array.isArray(parsed)) {
-                            setError(`Child table ${child.name} must be a JSON array.`);
+                // Fallback for legacy JSON child editor: only parse when table editor didn't provide rows.
+                if (Object.keys(childPayload).length === 0) {
+                    for (const child of childDefinitions) {
+                        const raw = childJsonByName[child.name] ?? '[]';
+                        try {
+                            const parsed = JSON.parse(raw);
+                            if (!Array.isArray(parsed)) {
+                                setError(`Child table ${child.name} must be a JSON array.`);
+                                setSaving(false);
+                                return;
+                            }
+
+                            const rows = parsed.filter(item => item && typeof item === 'object') as Array<Record<string, unknown>>;
+                            if (rows.length > 0) {
+                                childPayload[child.name] = rows;
+                            }
+                        } catch {
+                            setError(`Child table ${child.name} contains invalid JSON.`);
                             setSaving(false);
                             return;
                         }
-
-                        const rows = parsed.filter(item => item && typeof item === 'object') as Array<Record<string, unknown>>;
-                        if (rows.length > 0) {
-                            childPayload[child.name] = rows;
-                        }
-                    } catch {
-                        setError(`Child table ${child.name} contains invalid JSON.`);
-                        setSaving(false);
-                        return;
                     }
                 }
 

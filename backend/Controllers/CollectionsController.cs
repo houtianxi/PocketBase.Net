@@ -13,7 +13,10 @@ namespace PocketbaseNet.Api.Controllers;
 [Route("api/collections")]
 public class CollectionsController(
     AppDbContext db,
-    CollectionPublishService publishService) : ControllerBase
+    CollectionPublishService publishService,
+    ApiPreviewService apiPreviewService,
+    ApplicationSettingsService settingsService,
+    AuditLogService auditLogService) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IEnumerable<CollectionResponse>>> List()
@@ -54,7 +57,7 @@ public class CollectionsController(
         };
 
         db.Collections.Add(collection);
-        db.AuditLogs.Add(new AuditLog
+        await auditLogService.AddAsync(new AuditLog
         {
             ActorId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
             Action = "collections.create",
@@ -91,7 +94,7 @@ public class CollectionsController(
         collection.OwnerField = request.OwnerField;
         collection.UpdatedAt = DateTimeOffset.UtcNow;
 
-        db.AuditLogs.Add(new AuditLog
+        await auditLogService.AddAsync(new AuditLog
         {
             ActorId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
             Action = "collections.update",
@@ -129,7 +132,7 @@ public class CollectionsController(
         }
 
         db.Collections.Remove(collection);
-        db.AuditLogs.Add(new AuditLog
+        await auditLogService.AddAsync(new AuditLog
         {
             ActorId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
             Action = "collections.delete",
@@ -158,7 +161,7 @@ public class CollectionsController(
             db.Records.RemoveRange(records);
         }
 
-        db.AuditLogs.Add(new AuditLog
+        await auditLogService.AddAsync(new AuditLog
         {
             ActorId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
             Action = "collections.truncate",
@@ -224,7 +227,7 @@ public class CollectionsController(
             }
         }
 
-        db.AuditLogs.Add(new AuditLog
+        await auditLogService.AddAsync(new AuditLog
         {
             ActorId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
             Action = "collections.duplicate",
@@ -274,6 +277,20 @@ public class CollectionsController(
     {
         var job = await publishService.GetTaskAsync(taskId);
         return job is null ? NotFound() : Ok(job);
+    }
+
+    [AllowAnonymous]
+    [HttpGet("{id:guid}/api-preview")]
+    public async Task<ActionResult<CollectionApiPreviewResponse>> GetApiPreview(Guid id)
+    {
+        var enabled = await settingsService.GetBoolConfigAsync("enableApiPreview", true);
+        if (!enabled)
+        {
+            return NotFound(new { message = "API preview is disabled by system configuration" });
+        }
+
+        var preview = await apiPreviewService.BuildAsync(id);
+        return Ok(preview);
     }
 
     /// <summary>

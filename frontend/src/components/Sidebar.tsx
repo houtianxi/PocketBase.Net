@@ -4,32 +4,57 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import type { CollectionItem } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 
 interface SidebarProps {
     collections: CollectionItem[];
     selectedId: string | null;
     onSelect: (col: CollectionItem) => void;
     onNewCollection: () => void;
+    appName?: string;
+    appIconUrl?: string;
+    labels?: {
+        collections: string;
+        users: string;
+        logs: string;
+        orderDemo: string;
+        apiKeys: string;
+        apiDemo: string;
+        appSettings: string;
+        systemSettings: string;
+    };
     activeSection: 'collections' | 'users' | 'logs' | 'order-demo' | 'gate-mode3' | 'api-keys' | 'api-demo' | 'application-settings';
     onSectionChange: (s: 'collections' | 'users' | 'logs' | 'order-demo' | 'gate-mode3' | 'api-keys' | 'api-demo' | 'application-settings') => void;
 }
 
-const mainNavItems = [
-    { key: 'collections' as const, icon: Database, label: 'Collections' },
-    { key: 'order-demo' as const, icon: ShoppingCart, label: 'Order Demo' },
-];
-
-const systemNavItems = [
-    { key: 'application-settings' as const, icon: Settings, label: 'Application Setting' },
-    { key: 'users' as const, icon: Users, label: 'Users' },
-    { key: 'logs' as const, icon: BarChart2, label: 'Logs' },
-    { key: 'api-keys' as const, icon: Key, label: 'API Keys' },
-    { key: 'api-demo' as const, icon: FlaskConical, label: 'API 测试台' },
-];
-
-export function Sidebar({ collections, selectedId, onSelect, onNewCollection, activeSection, onSectionChange }: SidebarProps) {
+export function Sidebar({ collections, selectedId, onSelect, onNewCollection, appName, appIconUrl, labels, activeSection, onSectionChange }: SidebarProps) {
+    const { t } = useI18n();
     const [search, setSearch] = useState('');
     const [systemOpen, setSystemOpen] = useState(true);
+
+    const ui = labels ?? {
+        collections: 'Collections',
+        users: 'Users',
+        logs: 'Logs',
+        orderDemo: 'Order Demo',
+        apiKeys: 'API Keys',
+        apiDemo: t('apiDemo'),
+        appSettings: 'Application Settings',
+        systemSettings: 'System Settings',
+    };
+
+    const mainNavItems = [
+        { key: 'collections' as const, icon: Database, label: ui.collections },
+        { key: 'order-demo' as const, icon: ShoppingCart, label: ui.orderDemo },
+    ];
+
+    const systemNavItems = [
+        { key: 'application-settings' as const, icon: Settings, label: ui.appSettings },
+        { key: 'users' as const, icon: Users, label: ui.users },
+        { key: 'logs' as const, icon: BarChart2, label: ui.logs },
+        { key: 'api-keys' as const, icon: Key, label: ui.apiKeys },
+        { key: 'api-demo' as const, icon: FlaskConical, label: ui.apiDemo },
+    ];
 
     const isSystemSection = useMemo(() => systemNavItems.some(item => item.key === activeSection), [activeSection]);
 
@@ -41,10 +66,14 @@ export function Sidebar({ collections, selectedId, onSelect, onNewCollection, ac
         <div className="flex h-full w-56 min-w-56 flex-col border-r bg-background/95 backdrop-blur">
             {/* Logo */}
             <div className="flex h-12 items-center gap-2 border-b px-3">
-                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground text-xs font-bold">
-                    PB
-                </div>
-                <span className="text-[13px] font-semibold tracking-tight">PocketBase.Net</span>
+                {appIconUrl ? (
+                    <img src={appIconUrl} alt="Application icon" className="h-7 w-7 rounded-md bg-muted/40 p-0.5 object-contain" />
+                ) : (
+                    <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground text-xs font-bold">
+                        PB
+                    </div>
+                )}
+                <span className="text-[13px] font-semibold tracking-tight truncate">{appName || 'PocketBase.Net'}</span>
             </div>
 
             {/* Icon nav */}
@@ -76,7 +105,7 @@ export function Sidebar({ collections, selectedId, onSelect, onNewCollection, ac
                 >
                     <span className="flex items-center gap-2">
                         <Settings className="h-4 w-4" />
-                        System Setting
+                        {ui.systemSettings}
                     </span>
                     {systemOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                 </button>
@@ -111,7 +140,7 @@ export function Sidebar({ collections, selectedId, onSelect, onNewCollection, ac
                             <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
                             <input
                                 className="h-8 w-full rounded-md border bg-transparent pl-8 pr-3 text-[13px] placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                                placeholder="Search collections..."
+                                placeholder={t('sidebarSearchCollections')}
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
                             />
@@ -128,7 +157,7 @@ export function Sidebar({ collections, selectedId, onSelect, onNewCollection, ac
                         <div className="py-1">
                             {filtered.length === 0 ? (
                                 <div className="px-4 py-8 text-center text-xs text-muted-foreground">
-                                    {search ? 'No collections found' : 'No collections yet'}
+                                    {search ? t('sidebarNoCollectionsFound') : t('sidebarNoCollectionsYet')}
                                 </div>
                             ) : (
                                 filtered.map(col => (
@@ -154,7 +183,7 @@ export function Sidebar({ collections, selectedId, onSelect, onNewCollection, ac
                     <div className="border-t p-2.5">
                         <Button variant="outline" size="sm" className="h-8 w-full gap-1.5 text-[12px]" onClick={onNewCollection}>
                             <Plus className="h-3.5 w-3.5" />
-                            New collection
+                            {t('newCollection')}
                         </Button>
                     </div>
                 </>

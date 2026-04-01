@@ -22,6 +22,7 @@ public class AppDbContext : IdentityDbContext<AppUser, IdentityRole, string>
     public DbSet<AiMessage> AiMessages => Set<AiMessage>();
     public DbSet<FileAttachment> FileAttachments => Set<FileAttachment>();
     public DbSet<AppApiKey> ApiKeys => Set<AppApiKey>();
+    public DbSet<AppSetting> AppSettings => Set<AppSetting>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -105,6 +106,19 @@ public class AppDbContext : IdentityDbContext<AppUser, IdentityRole, string>
             entity.Property(x => x.OwnerEmail).HasMaxLength(255);
             entity.Property(x => x.KeyPrefix).HasMaxLength(32);
             entity.Property(x => x.SecretHash).HasMaxLength(128);
+        });
+
+        builder.Entity<AppSetting>(entity =>
+        {
+            entity.Property(x => x.AppName).HasMaxLength(200);
+            entity.Property(x => x.AppSubtitle).HasMaxLength(300);
+            entity.Property(x => x.AppIconUrl).HasMaxLength(500);
+            entity.Property(x => x.SiteTitle).HasMaxLength(200);
+            entity.Property(x => x.DefaultLanguage).HasMaxLength(32);
+            entity.Property(x => x.PrimaryColor).HasMaxLength(32);
+            entity.Property(x => x.AttachmentsFolder).HasMaxLength(255);
+            entity.Property(x => x.AvatarsFolder).HasMaxLength(255);
+            entity.Property(x => x.EditorImagesFolder).HasMaxLength(255);
         });
 
         builder.Entity<AiConversation>(entity =>

@@ -249,6 +249,16 @@ WHERE [TaskId] = @TaskId;", new { TaskId = taskId }, cancellationToken: cancella
 
         foreach (var child in children)
         {
+            if (child.IsRelatedCollectionBacked)
+            {
+                planItems.Add(new PublishPlanItemResponse(
+                    "ChildBinding",
+                    child.RelatedCollectionSlug ?? child.Name,
+                    "Reuse",
+                    $"Table 字段复用已发布关联集合表 {BuildPhysicalTableName(child.RelatedCollectionSlug ?? child.Name)}，关联键为 {BuildPhysicalTableName(child.RelatedCollectionSlug ?? child.Name)}.{child.ChildKey} -> {tableName}.{child.ParentKey}"));
+                continue;
+            }
+
             var childTableName = BuildChildTableName(collection.Slug, child.Name);
             var childColumns = BuildChildColumns(child);
             await BuildTablePlanAsync(connection, childTableName, childColumns, scriptParts, warnings, planItems, cancellationToken);
@@ -635,6 +645,9 @@ END";
                 .Select(c => new ChildTableSchema(
                     c.Name.Trim(),
                     c.CascadeDelete,
+                    string.IsNullOrWhiteSpace(c.RelatedCollectionSlug) ? null : c.RelatedCollectionSlug.Trim(),
+                    string.IsNullOrWhiteSpace(c.ParentKey) ? "Id" : c.ParentKey.Trim(),
+                    string.IsNullOrWhiteSpace(c.ChildKey) ? "ParentId" : c.ChildKey.Trim(),
                     c.Fields.Where(f => !string.IsNullOrWhiteSpace(f.Name))
                         .Select(f => new ChildFieldSchema(
                             f.Name.Trim(),
@@ -765,7 +778,7 @@ END;";
 
     private static async Task BackfillLegacyRecordsAsync(IDbConnection connection, IDbTransaction tx, CollectionDefinition collection, string tableName, CancellationToken cancellationToken)
     {
-        var fields = collection.Fields.Where(f => !f.IsSystem).OrderBy(f => f.DisplayOrder).ToList();
+        var fields = collection.Fields.Where(f => !f.IsSystem && f.Type != FieldType.Table).OrderBy(f => f.DisplayOrder).ToList();
         foreach (var record in collection.Records)
         {
             Dictionary<string, object?> data;
@@ -946,6 +959,9 @@ WHERE [TaskId] = @TaskId;",
     {
         public string Name { get; init; } = string.Empty;
         public bool CascadeDelete { get; init; } = true;
+        public string? RelatedCollectionSlug { get; init; }
+        public string? ParentKey { get; init; }
+        public string? ChildKey { get; init; }
         public List<ChildFieldDto> Fields { get; init; } = [];
     }
 
@@ -958,7 +974,16 @@ WHERE [TaskId] = @TaskId;",
         public string? RenameFrom { get; init; }
     }
 
-    private sealed record ChildTableSchema(string Name, bool CascadeDelete, List<ChildFieldSchema> Fields);
+    private sealed record ChildTableSchema(
+        string Name,
+        bool CascadeDelete,
+        string? RelatedCollectionSlug,
+        string ParentKey,
+        string ChildKey,
+        List<ChildFieldSchema> Fields)
+    {
+        public bool IsRelatedCollectionBacked => !string.IsNullOrWhiteSpace(RelatedCollectionSlug);
+    }
     private sealed record ChildFieldSchema(string Name, FieldType Type, bool Required, bool Unique, string? RenameFrom);
 
     private sealed class PublishJobRow

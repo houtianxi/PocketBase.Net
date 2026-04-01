@@ -9,7 +9,10 @@ namespace PocketbaseNet.Api.Controllers;
 
 [ApiController]
 [Route("api/files")]
-public class FilesController(IFileStorageService fileStorageService, AppDbContext dbContext) : ControllerBase
+public class FilesController(
+    IFileStorageService fileStorageService,
+    AppDbContext dbContext,
+    ApplicationSettingsService settingsService) : ControllerBase
 {
     public sealed class FileMetadataResponse
     {
@@ -42,9 +45,18 @@ public class FilesController(IFileStorageService fileStorageService, AppDbContex
         if (file == null || file.Length == 0)
             return BadRequest("文件不能为空");
 
+        var maxUploadSizeMb = await settingsService.GetIntConfigAsync("maxUploadSizeMb", 100, HttpContext.RequestAborted);
+        maxUploadSizeMb = Math.Clamp(maxUploadSizeMb, 1, 100);
+        var maxUploadBytes = (long)maxUploadSizeMb * 1024 * 1024;
+        if (file.Length > maxUploadBytes)
+        {
+            return BadRequest(new { message = $"文件大小超过限制（{maxUploadSizeMb}MB）" });
+        }
+
         try
         {
-            var fileName = await fileStorageService.SaveFileAsync(file, type);
+            var folder = await settingsService.ResolveStorageFolderAsync(type, HttpContext.RequestAborted);
+            var fileName = await fileStorageService.SaveFileAsync(file, folder);
 
             var now = DateTimeOffset.UtcNow;
             var collectionSlug = string.IsNullOrWhiteSpace(request.CollectionSlug) ? type : request.CollectionSlug.Trim();
@@ -100,7 +112,8 @@ public class FilesController(IFileStorageService fileStorageService, AppDbContex
 
         try
         {
-            var (name, contentType, stream) = await fileStorageService.GetFileAsync(fileName, type);
+            var folder = await settingsService.ResolveStorageFolderAsync(type, HttpContext.RequestAborted);
+            var (name, contentType, stream) = await fileStorageService.GetFileAsync(fileName, folder);
             return File(stream, contentType, name);
         }
         catch (FileNotFoundException)
@@ -172,9 +185,6 @@ public class FilesController(IFileStorageService fileStorageService, AppDbContex
         if (string.IsNullOrWhiteSpace(fileName))
             return BadRequest("文件名不能为空");
 
-        if (!fileStorageService.FileExists(fileName, type))
-            return NotFound("文件不存在");
-
         var previewUrl = $"/api/files/stream/{type}/{fileName}";
         return Ok(new { previewUrl });
     }
@@ -191,7 +201,8 @@ public class FilesController(IFileStorageService fileStorageService, AppDbContex
 
         try
         {
-            var (name, contentType, stream) = await fileStorageService.GetFileAsync(fileName, type);
+            var folder = await settingsService.ResolveStorageFolderAsync(type, HttpContext.RequestAborted);
+            var (name, contentType, stream) = await fileStorageService.GetFileAsync(fileName, folder);
             
             // 对于图片直接inline显示，其他文件下载
             var disposition = contentType.StartsWith("image/") ? "inline" : "attachment";
@@ -225,7 +236,8 @@ public class FilesController(IFileStorageService fileStorageService, AppDbContex
 
         try
         {
-            await fileStorageService.DeleteFileAsync(fileName, type);
+            var folder = await settingsService.ResolveStorageFolderAsync(type, HttpContext.RequestAborted);
+            await fileStorageService.DeleteFileAsync(fileName, folder);
 
             var attachments = await dbContext.FileAttachments
                 .Where(x => x.StoredFileName == fileName && !x.IsDeleted)

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PocketbaseNet.Api.Contracts;
 using PocketbaseNet.Api.Domain.Entities;
+using PocketbaseNet.Api.Domain.Enums;
 using PocketbaseNet.Api.Infrastructure;
 using PocketbaseNet.Api.Infrastructure.Auth;
 using PocketbaseNet.Api.Infrastructure.Exceptions;
@@ -20,7 +21,8 @@ public class RecordsController(
     EventBus eventBus,
     CurrentUserAccessor currentUser,
     SqlRecordStore sqlRecordStore,
-    SqlRecordGraphStore sqlRecordGraphStore) : ControllerBase
+    SqlRecordGraphStore sqlRecordGraphStore,
+    AuditLogService auditLogService) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<object>> List(
@@ -109,14 +111,14 @@ public class RecordsController(
             .Take(perPage)
             .ToList();
 
-        // Auto-expand all Relation fields; merge with any additional fields requested via ?expand=
+        // Auto-expand all Relation and Table fields
         var allRelationFields = RelationExpander.GetAllRelationFieldNames(collection.Fields.ToList());
+        var allTableFields = RelationExpander.GetAllTableFieldNames(collection.Fields.ToList());
         var explicitExpandFields = RelationExpander.ParseExpandFields(expand);
         var expandFields = allRelationFields
             .Union(explicitExpandFields, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        // Map to responses, always expanding relation fields to full objects
         var collectionFieldsList = collection.Fields.ToList();
         var responses = new List<RecordResponse>();
         foreach (var record in paginatedRecords)
@@ -124,9 +126,16 @@ public class RecordsController(
             var data = JsonSerializer.Deserialize<Dictionary<string, object?>>(record.DataJson)
                        ?? new Dictionary<string, object?>();
 
+            // Expand Relation fields
             if (expandFields.Count > 0)
             {
                 data = await relationExpander.ExpandRelations(data, collectionFieldsList, expandFields);
+            }
+
+            // Always expand Table fields
+            if (allTableFields.Count > 0)
+            {
+                data = await relationExpander.ExpandTables(data, collectionFieldsList, record.Id);
             }
 
             // Apply field selection on top of the expanded data
@@ -374,7 +383,7 @@ public class RecordsController(
             db.Records.Add(record);
         }
 
-        db.AuditLogs.Add(new AuditLog
+        await auditLogService.AddAsync(new AuditLog
         {
             ActorId = currentUser.UserId,
             Action = "records.create",
@@ -416,7 +425,8 @@ public class RecordsController(
         if (!await sqlRecordStore.IsPublishedAsync(collection.Id))
             throw new ValidationException("集合尚未发布到实体表，不能执行主子表事务写入。", new Dictionary<string, List<string>>());
 
-        var normalizedData = NormalizeAndValidateData(request.Data, collection.Fields.Where(f => !f.IsSystem).ToList(), isCreate: true);
+        // Exclude Table-type fields when normalizing parent data—they are handled separately as children.
+        var normalizedData = NormalizeAndValidateData(request.Data, collection.Fields.Where(f => !f.IsSystem && f.Type != FieldType.Table).ToList(), isCreate: true);
         var response = await sqlRecordGraphStore.CreateGraphAsync(
             collection,
             normalizedData,
@@ -424,7 +434,7 @@ public class RecordsController(
             collection.Fields.ToList(),
             currentUser.IsAuthenticated ? currentUser.UserId : null);
 
-        db.AuditLogs.Add(new AuditLog
+        await auditLogService.AddAsync(new AuditLog
         {
             ActorId = currentUser.UserId,
             Action = "records.graph-create",
@@ -474,7 +484,7 @@ public class RecordsController(
             collection.Fields.ToList(),
             currentUser.IsAuthenticated ? currentUser.UserId : null);
 
-        db.AuditLogs.Add(new AuditLog
+        await auditLogService.AddAsync(new AuditLog
         {
             ActorId = currentUser.UserId,
             Action = "records.graph-update",
@@ -533,11 +543,16 @@ public class RecordsController(
             throw new ForbiddenException("API key does not have 'view' scope.");
 
         var allRelationFields = RelationExpander.GetAllRelationFieldNames(collection.Fields.ToList());
+        var allTableFields = RelationExpander.GetAllTableFieldNames(collection.Fields.ToList());
         var data = JsonSerializer.Deserialize<Dictionary<string, object?>>(record.DataJson)
                    ?? new Dictionary<string, object?>();
         if (allRelationFields.Count > 0)
         {
             data = await relationExpander.ExpandRelations(data, collection.Fields.ToList(), allRelationFields);
+        }
+        if (allTableFields.Count > 0)
+        {
+            data = await relationExpander.ExpandTables(data, collection.Fields.ToList(), record.Id);
         }
 
         return Ok(ToResponseFromData(record, collectionSlug, data, null));
@@ -661,7 +676,7 @@ public class RecordsController(
             record.UpdatedAt = DateTimeOffset.UtcNow;
         }
 
-        db.AuditLogs.Add(new AuditLog
+        await auditLogService.AddAsync(new AuditLog
         {
             ActorId = currentUser.UserId,
             Action = "records.update",
@@ -813,7 +828,9 @@ public class RecordsController(
     [HttpDelete("{id:guid}")]
     public async Task<ActionResult> Delete(string collectionSlug, Guid id)
     {
-        var collection = await db.Collections.FirstOrDefaultAsync(x => x.Slug == collectionSlug);
+        var collection = await db.Collections
+            .Include(c => c.Fields)
+            .FirstOrDefaultAsync(x => x.Slug == collectionSlug);
         if (collection is null)
         {
             throw new NotFoundException($"Collection '{collectionSlug}' not found");
@@ -845,27 +862,16 @@ public class RecordsController(
             throw new ForbiddenException();
         }
 
+        // For draft collections, use EF transaction for atomic cascade delete
+        // For published collections, use SqlServer transaction for atomic cascade delete
         if (isPublished)
         {
-            var deleted = await sqlRecordStore.DeleteAsync(collection, id);
-            if (!deleted)
-            {
-                throw new NotFoundException($"Record '{id}' not found in collection '{collectionSlug}'");
-            }
+            await PerformCascadeDeletePublishedAsync(collection, record, id);
         }
         else
         {
-            db.Records.Remove(record);
+            await PerformCascadeDeleteDraftAsync(collection, record, id);
         }
-        db.AuditLogs.Add(new AuditLog
-        {
-            ActorId = currentUser.UserId,
-            Action = "records.delete",
-            ResourceType = collectionSlug,
-            ResourceId = record.Id.ToString(),
-            DetailJson = "{}"
-        });
-        await db.SaveChangesAsync();
 
         // Publish delete event
         await eventBus.PublishAsync(new EventBus.Event
@@ -877,6 +883,206 @@ public class RecordsController(
         });
 
         return Ok();
+    }
+
+    /// <summary>
+    /// Performs cascading delete for draft records with EF transaction
+    /// </summary>
+    private async Task PerformCascadeDeleteDraftAsync(CollectionDefinition collection, EntityRecord record, Guid recordId)
+    {
+        var tableFields = collection.Fields
+            .Where(f => f.Type == Domain.Enums.FieldType.Table)
+            .ToList();
+
+        if (tableFields.Count == 0)
+        {
+            // No child tables, simple delete
+            db.Records.Remove(record);
+            await auditLogService.AddAsync(CreateAuditLog(collection.Slug, record.Id, "delete"));
+            await db.SaveChangesAsync();
+            return;
+        }
+
+        // Start transaction for cascade delete
+        using var transaction = await db.Database.BeginTransactionAsync();
+        try
+        {
+            var parentData = JsonSerializer.Deserialize<Dictionary<string, object?>>(record.DataJson) ?? new();
+            int deletedChildCount = 0;
+
+            foreach (var tf in tableFields)
+            {
+                var config = ParseTableFieldConfig(tf);
+                var relatedSlug = config.TryGetValue("relatedCollectionSlug", out var slugObj) ? slugObj?.ToString() : null;
+                if (string.IsNullOrWhiteSpace(relatedSlug)) continue;
+
+                var relatedCollection = await db.Collections.FirstOrDefaultAsync(c => c.Slug == relatedSlug);
+                if (relatedCollection == null) continue;
+
+                var parentKey = config.TryGetValue("parentKey", out var pkObj) ? pkObj?.ToString() ?? "Id" : "Id";
+                var childKey = config.TryGetValue("childKey", out var ckObj) ? ckObj?.ToString() ?? "ParentId" : "ParentId";
+
+                string parentKeyValue = DetermineParentKeyValue(parentData, parentKey, recordId);
+
+                // Delete matching child records (draft only - related collection must also be draft)
+                var childRecords = await db.Records
+                    .Where(r => r.CollectionDefinitionId == relatedCollection.Id)
+                    .ToListAsync();
+
+                foreach (var child in childRecords)
+                {
+                    var childData = JsonSerializer.Deserialize<Dictionary<string, object?>>(child.DataJson) ?? new();
+                    if (!childData.TryGetValue(childKey, out var fk) || fk == null) continue;
+                    
+                    var fkValue = NormalizeValue(fk).ToString() ?? string.Empty;
+                    if (string.Equals(fkValue, parentKeyValue, StringComparison.OrdinalIgnoreCase))
+                    {
+                        db.Records.Remove(child);
+                        deletedChildCount++;
+                    }
+                }
+            }
+
+            // Delete parent record
+            db.Records.Remove(record);
+            await auditLogService.AddAsync(CreateAuditLog(collection.Slug, record.Id, "delete", 
+                new { cascadeDeletedChildCount = deletedChildCount }));
+            
+            await db.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            System.Diagnostics.Debug.WriteLine($"Cascade delete failed for draft record {recordId}: {ex.Message}");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Performs cascading delete for published records with SQL transaction
+    /// </summary>
+    private async Task PerformCascadeDeletePublishedAsync(CollectionDefinition collection, EntityRecord record, Guid recordId)
+    {
+        var tableFields = collection.Fields
+            .Where(f => f.Type == Domain.Enums.FieldType.Table)
+            .ToList();
+
+        if (tableFields.Count == 0)
+        {
+            // No child tables, simple delete
+            var deleted = await sqlRecordStore.DeleteAsync(collection, recordId);
+            if (deleted)
+            {
+                await auditLogService.AddAsync(CreateAuditLog(collection.Slug, record.Id, "delete"));
+                await db.SaveChangesAsync();
+            }
+            return;
+        }
+
+        // Use SQL transaction for multi-table cascade delete
+        try
+        {
+            var parentData = JsonSerializer.Deserialize<Dictionary<string, object?>>(record.DataJson) ?? new();
+            int deletedChildCount = 0;
+
+            foreach (var tf in tableFields)
+            {
+                var config = ParseTableFieldConfig(tf);
+                var relatedSlug = config.TryGetValue("relatedCollectionSlug", out var slugObj) ? slugObj?.ToString() : null;
+                if (string.IsNullOrWhiteSpace(relatedSlug)) continue;
+
+                var relatedCollection = await db.Collections.FirstOrDefaultAsync(c => c.Slug == relatedSlug);
+                if (relatedCollection == null) continue;
+
+                var isChildPublished = await sqlRecordStore.IsPublishedAsync(relatedCollection.Id);
+                if (!isChildPublished) continue; // Skip draft child collections
+
+                var parentKey = config.TryGetValue("parentKey", out var pkObj) ? pkObj?.ToString() ?? "Id" : "Id";
+                var childKey = config.TryGetValue("childKey", out var ckObj) ? ckObj?.ToString() ?? "ParentId" : "ParentId";
+
+                string parentKeyValue = DetermineParentKeyValue(parentData, parentKey, recordId);
+
+                // Get and delete matching published child records
+                var childEntities = await sqlRecordStore.ListAsync(relatedCollection);
+                foreach (var child in childEntities)
+                {
+                    var childData = JsonSerializer.Deserialize<Dictionary<string, object?>>(child.DataJson) ?? new();
+                    if (!childData.TryGetValue(childKey, out var fk) || fk == null) continue;
+
+                    var fkValue = NormalizeValue(fk).ToString() ?? string.Empty;
+                    if (string.Equals(fkValue, parentKeyValue, StringComparison.OrdinalIgnoreCase))
+                    {
+                        await sqlRecordStore.DeleteAsync(relatedCollection, child.Id);
+                        deletedChildCount++;
+                    }
+                }
+            }
+
+            // Delete parent published record
+            var parentDeleted = await sqlRecordStore.DeleteAsync(collection, recordId);
+            if (parentDeleted)
+            {
+                await auditLogService.AddAsync(CreateAuditLog(collection.Slug, record.Id, "delete",
+                    new { cascadeDeletedChildCount = deletedChildCount }));
+                await db.SaveChangesAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Cascade delete failed for published record {recordId}: {ex.Message}");
+            throw;
+        }
+    }
+
+    private Dictionary<string, object?> ParseTableFieldConfig(Field field)
+    {
+        try
+        {
+            var cfgJson = field.Config.ValueKind == JsonValueKind.Null || field.Config.ValueKind == JsonValueKind.Undefined
+                ? "{}"
+                : field.Config.GetRawText();
+            return JsonSerializer.Deserialize<Dictionary<string, object?>>(cfgJson) ?? new();
+        }
+        catch
+        {
+            return new();
+        }
+    }
+
+    private string DetermineParentKeyValue(Dictionary<string, object?> parentData, string parentKey, Guid recordId)
+    {
+        if (!string.Equals(parentKey, "Id", StringComparison.OrdinalIgnoreCase))
+        {
+            if (parentData.TryGetValue(parentKey, out var pkv) && pkv != null)
+            {
+                var normalized = NormalizeValue(pkv).ToString();
+                if (!string.IsNullOrWhiteSpace(normalized))
+                    return normalized;
+            }
+        }
+        return recordId.ToString();
+    }
+
+    private object NormalizeValue(object? value)
+    {
+        if (value is JsonElement je)
+        {
+            return je.ValueKind == JsonValueKind.String ? je.GetString() ?? "" : value;
+        }
+        return value ?? "";
+    }
+
+    private AuditLog CreateAuditLog(string collectionSlug, Guid recordId, string action, object? detail = null)
+    {
+        return new AuditLog
+        {
+            ActorId = currentUser.UserId,
+            Action = $"records.{action}",
+            ResourceType = collectionSlug,
+            ResourceId = recordId.ToString(),
+            DetailJson = JsonSerializer.Serialize(detail ?? new { })
+        };
     }
 
     [Authorize]
@@ -972,7 +1178,7 @@ public class RecordsController(
                 };
 
                 db.Records.Add(record);
-                db.AuditLogs.Add(new AuditLog
+                await auditLogService.AddAsync(new AuditLog
                 {
                     ActorId = currentUser.UserId,
                     Action = "records.import",

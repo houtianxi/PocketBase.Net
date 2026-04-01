@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { api } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 
 type UserRole = 'User' | 'Admin';
 
@@ -32,6 +33,7 @@ const EMPTY_EDIT_FORM: EditUserForm = {
 };
 
 export function UsersView() {
+    const { t } = useI18n();
     const [users, setUsers] = useState<UserItem[]>([]);
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(false);
@@ -60,7 +62,7 @@ export function UsersView() {
             setShowNew(false);
             setNewUser({ email: '', displayName: '', password: 'User1234!', role: 'User' });
         } catch (e: any) {
-            setError(e.response?.data?.message || 'Failed to create user');
+            setError(e.response?.data?.message || t('usersFailedCreate'));
         } finally { setSaving(false); }
     };
 
@@ -90,7 +92,7 @@ export function UsersView() {
             setEditingUser(null);
             setEditUser(EMPTY_EDIT_FORM);
         } catch (e: any) {
-            setError(e.response?.data?.message || 'Failed to update user');
+            setError(e.response?.data?.message || t('usersFailedUpdate'));
         } finally {
             setSaving(false);
         }
@@ -108,13 +110,13 @@ export function UsersView() {
                 <div className="relative flex-1 max-w-sm">
                     <Search className="absolute left-2.5 top-2 h-4 w-4 text-muted-foreground" />
                     <input className="h-8 w-full rounded-md border bg-transparent pl-8 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                        placeholder="Search users..." value={search} onChange={e => setSearch(e.target.value)} />
+                        placeholder={t('usersSearchPlaceholder')} value={search} onChange={e => setSearch(e.target.value)} />
                 </div>
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={load}>
                     <RotateCcw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                 </Button>
                 <Button size="sm" className="h-8 gap-1.5 text-xs" onClick={() => setShowNew(true)}>
-                    <Plus className="h-3.5 w-3.5" />New user
+                    <Plus className="h-3.5 w-3.5" />{t('usersNewUser')}
                 </Button>
             </div>
 
@@ -123,7 +125,7 @@ export function UsersView() {
                 <table className="w-full text-sm border-collapse">
                     <thead className="sticky top-0 bg-muted/60 backdrop-blur">
                         <tr>
-                            {['ID', 'Email', 'Display Name', 'Role', 'Status', 'Actions'].map(h => (
+                            {[t('usersId'), t('usersEmail'), t('usersDisplayName'), t('usersRole'), t('usersStatus'), t('usersActions')].map(h => (
                                 <th key={h} className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">{h}</th>
                             ))}
                         </tr>
@@ -136,13 +138,13 @@ export function UsersView() {
                                 <td className="px-4 py-2">{u.displayName}</td>
                                 <td className="px-4 py-2">
                                     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${u.role === 'Admin' ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400' : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'}`}>
-                                        {u.role ?? 'User'}
+                                        {(u.role ?? 'User') === 'Admin' ? t('userRoleAdmin') : t('userRoleUser')}
                                     </span>
                                 </td>
                                 <td className="px-4 py-2">
                                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${u.isActive ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
                                         {u.isActive ? <UserCheck className="h-3 w-3" /> : <UserX className="h-3 w-3" />}
-                                        {u.isActive ? 'Active' : 'Inactive'}
+                                        {u.isActive ? t('usersActive') : t('usersInactive')}
                                     </span>
                                 </td>
                                 <td className="px-4 py-2">
@@ -163,70 +165,70 @@ export function UsersView() {
 
             <Dialog open={showNew} onOpenChange={v => !v && setShowNew(false)}>
                 <DialogContent className="max-w-md">
-                    <DialogHeader><DialogTitle>New user</DialogTitle></DialogHeader>
+                    <DialogHeader><DialogTitle>{t('usersDialogNewTitle')}</DialogTitle></DialogHeader>
                     <div className="space-y-3">
-                        <div className="space-y-1.5"><Label>Email</Label><Input type="email" value={newUser.email} onChange={e => setNewUser(p => ({ ...p, email: e.target.value }))} /></div>
-                        <div className="space-y-1.5"><Label>Display name</Label><Input value={newUser.displayName} onChange={e => setNewUser(p => ({ ...p, displayName: e.target.value }))} /></div>
-                        <div className="space-y-1.5"><Label>Password</Label><Input type="password" value={newUser.password} onChange={e => setNewUser(p => ({ ...p, password: e.target.value }))} /></div>
+                        <div className="space-y-1.5"><Label>{t('usersEmail')}</Label><Input type="email" value={newUser.email} onChange={e => setNewUser(p => ({ ...p, email: e.target.value }))} /></div>
+                        <div className="space-y-1.5"><Label>{t('usersDisplayName')}</Label><Input value={newUser.displayName} onChange={e => setNewUser(p => ({ ...p, displayName: e.target.value }))} /></div>
+                        <div className="space-y-1.5"><Label>{t('usersPassword')}</Label><Input type="password" value={newUser.password} onChange={e => setNewUser(p => ({ ...p, password: e.target.value }))} /></div>
                         <div className="space-y-1.5">
-                            <Label>Role</Label>
+                            <Label>{t('usersRole')}</Label>
                             <Select value={newUser.role} onValueChange={v => setNewUser(p => ({ ...p, role: v }))}>
                                 <SelectTrigger><SelectValue /></SelectTrigger>
-                                <SelectContent><SelectItem value="User">User</SelectItem><SelectItem value="Admin">Admin</SelectItem></SelectContent>
+                                <SelectContent><SelectItem value="User">{t('userRoleUser')}</SelectItem><SelectItem value="Admin">{t('userRoleAdmin')}</SelectItem></SelectContent>
                             </Select>
                         </div>
                         {error && <p className="text-xs text-destructive">{error}</p>}
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowNew(false)}>Cancel</Button>
-                        <Button onClick={createUser} disabled={saving}>{saving ? 'Creating...' : 'Create'}</Button>
+                        <Button variant="outline" onClick={() => setShowNew(false)}>{t('usersCancel')}</Button>
+                        <Button onClick={createUser} disabled={saving}>{saving ? t('usersCreating') : t('usersCreate')}</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
             <Dialog open={!!editingUser} onOpenChange={v => !v && setEditingUser(null)}>
                 <DialogContent className="max-w-md">
-                    <DialogHeader><DialogTitle>Edit user</DialogTitle></DialogHeader>
+                    <DialogHeader><DialogTitle>{t('usersDialogEditTitle')}</DialogTitle></DialogHeader>
                     <div className="space-y-3">
                         <div className="space-y-1.5">
-                            <Label>Email</Label>
+                            <Label>{t('usersEmail')}</Label>
                             <Input value={editingUser?.email ?? ''} disabled />
                         </div>
                         <div className="space-y-1.5">
-                            <Label>Display name</Label>
+                            <Label>{t('usersDisplayName')}</Label>
                             <Input value={editUser.displayName} onChange={e => setEditUser(p => ({ ...p, displayName: e.target.value }))} />
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1.5">
-                                <Label>Role</Label>
+                                <Label>{t('usersRole')}</Label>
                                 <Select value={editUser.role} onValueChange={v => setEditUser(p => ({ ...p, role: v as UserRole }))}>
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="User">User</SelectItem>
-                                        <SelectItem value="Admin">Admin</SelectItem>
+                                        <SelectItem value="User">{t('userRoleUser')}</SelectItem>
+                                        <SelectItem value="Admin">{t('userRoleAdmin')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div className="space-y-1.5">
-                                <Label>Status</Label>
+                                <Label>{t('usersStatus')}</Label>
                                 <Select value={editUser.isActive ? 'active' : 'inactive'} onValueChange={v => setEditUser(p => ({ ...p, isActive: v === 'active' }))}>
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="active">Active</SelectItem>
-                                        <SelectItem value="inactive">Inactive</SelectItem>
+                                        <SelectItem value="active">{t('usersActive')}</SelectItem>
+                                        <SelectItem value="inactive">{t('usersInactive')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                         </div>
                         <div className="space-y-1.5">
-                            <Label>Reset password (optional)</Label>
-                            <Input type="password" value={editUser.password} onChange={e => setEditUser(p => ({ ...p, password: e.target.value }))} placeholder="Leave empty to keep current password" />
+                            <Label>{t('usersResetPasswordOptional')}</Label>
+                            <Input type="password" value={editUser.password} onChange={e => setEditUser(p => ({ ...p, password: e.target.value }))} placeholder={t('usersPasswordKeepHint')} />
                         </div>
                         {error && <p className="text-xs text-destructive">{error}</p>}
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setEditingUser(null)}>Cancel</Button>
-                        <Button onClick={updateUser} disabled={saving}>{saving ? 'Saving...' : 'Save changes'}</Button>
+                        <Button variant="outline" onClick={() => setEditingUser(null)}>{t('usersCancel')}</Button>
+                        <Button onClick={updateUser} disabled={saving}>{saving ? t('usersSaving') : t('usersSaveChanges')}</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

@@ -57,6 +57,9 @@ builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<CurrentUserAccessor>();
 builder.Services.AddScoped<RuleEvaluator>();
 builder.Services.AddScoped<FieldService>();
+builder.Services.AddScoped<ApiPreviewService>();
+builder.Services.AddScoped<ApplicationSettingsService>();
+builder.Services.AddScoped<AuditLogService>();
 builder.Services.AddScoped<RelationExpander>();
 builder.Services.AddScoped<SqlServerConnectionFactory>();
 builder.Services.AddScoped<CollectionPublishService>();
@@ -185,10 +188,53 @@ using (var scope = app.Services.CreateScope())
     if (db.Database.IsSqlServer())
     {
         await db.Database.ExecuteSqlRawAsync(@"
+            IF OBJECT_ID(N'[dbo].[AppSettings]', N'U') IS NULL
+            BEGIN
+                CREATE TABLE [dbo].[AppSettings] (
+                    [Id] uniqueidentifier NOT NULL CONSTRAINT [PK_AppSettings] PRIMARY KEY,
+                    [AppName] nvarchar(200) NOT NULL,
+                    [AppSubtitle] nvarchar(300) NOT NULL,
+                    [AppIconUrl] nvarchar(500) NOT NULL,
+                    [SiteTitle] nvarchar(200) NOT NULL,
+                    [DefaultLanguage] nvarchar(32) NOT NULL,
+                    [SupportedLanguagesJson] nvarchar(max) NOT NULL,
+                    [PrimaryColor] nvarchar(32) NOT NULL,
+                    [AttachmentsFolder] nvarchar(255) NOT NULL,
+                    [AvatarsFolder] nvarchar(255) NOT NULL,
+                    [EditorImagesFolder] nvarchar(255) NOT NULL,
+                    [SystemConfigJson] nvarchar(max) NOT NULL,
+                    [CreatedAt] datetimeoffset NOT NULL,
+                    [UpdatedAt] datetimeoffset NOT NULL
+                );
+            END
+        ");
+
+        await db.Database.ExecuteSqlRawAsync(@"
             IF EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_Records_AspNetUsers_OwnerId')
                 ALTER TABLE [Records] DROP CONSTRAINT [FK_Records_AspNetUsers_OwnerId];
             IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Records_OwnerId' AND object_id = OBJECT_ID('[Records]'))
                 DROP INDEX [IX_Records_OwnerId] ON [Records];
+        ");
+    }
+    else
+    {
+        await db.Database.ExecuteSqlRawAsync(@"
+            CREATE TABLE IF NOT EXISTS AppSettings (
+                Id TEXT NOT NULL PRIMARY KEY,
+                AppName TEXT NOT NULL,
+                AppSubtitle TEXT NOT NULL,
+                AppIconUrl TEXT NOT NULL,
+                SiteTitle TEXT NOT NULL,
+                DefaultLanguage TEXT NOT NULL,
+                SupportedLanguagesJson TEXT NOT NULL,
+                PrimaryColor TEXT NOT NULL,
+                AttachmentsFolder TEXT NOT NULL,
+                AvatarsFolder TEXT NOT NULL,
+                EditorImagesFolder TEXT NOT NULL,
+                SystemConfigJson TEXT NOT NULL,
+                CreatedAt TEXT NOT NULL,
+                UpdatedAt TEXT NOT NULL
+            );
         ");
     }
 

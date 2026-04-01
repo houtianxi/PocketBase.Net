@@ -109,3 +109,31 @@ public record PublishTaskStatusResponse(
     DateTimeOffset? FinishedAt,
     IReadOnlyList<PublishPlanItemResponse> PlanItems,
     string? SqlScript);
+
+public record CollectionApiPreviewResponse(
+    Guid CollectionId,
+    string CollectionName,
+    string CollectionSlug,
+    IReadOnlyList<ApiPreviewEndpointResponse> Endpoints);
+
+public record ApiPreviewEndpointResponse(
+    string Key,
+    string Label,
+    string Method,
+    string Url,
+    string Summary,
+    IReadOnlyList<ApiPreviewParameterResponse> Parameters,
+    string? RequestBodyExample,
+    string? RequestBodyDescription,
+    string? RequestExample,
+    string? ResponseExample,
+    IReadOnlyList<string> Notes);
+
+public record ApiPreviewParameterResponse(
+    string Name,
+    string Location,
+    string Type,
+    bool Required,
+    string Description,
+    string? Example = null,
+    IReadOnlyList<string>? AllowedValues = null);

@@ -87,7 +87,7 @@ WHERE [CollectionId] = @CollectionId
 
         await using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
         var fields = await db.Fields
-            .Where(f => f.CollectionDefinitionId == collection.Id && !f.IsSystem)
+            .Where(f => f.CollectionDefinitionId == collection.Id && !f.IsSystem && f.Type != FieldType.Table)
             .OrderBy(f => f.DisplayOrder)
             .ToListAsync(cancellationToken);
 
@@ -143,7 +143,7 @@ VALUES ({string.Join(",", values)});";
 
         await using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
         var fields = await db.Fields
-            .Where(f => f.CollectionDefinitionId == collection.Id && !f.IsSystem)
+            .Where(f => f.CollectionDefinitionId == collection.Id && !f.IsSystem && f.Type != FieldType.Table)
             .OrderBy(f => f.DisplayOrder)
             .ToListAsync(cancellationToken);
 
@@ -214,7 +214,7 @@ WHERE [CollectionId] = @CollectionId
     private async Task<List<string>> GetCollectionFieldNamesAsync(Guid collectionId, CancellationToken cancellationToken)
     {
         return await db.Fields
-            .Where(f => f.CollectionDefinitionId == collectionId && !f.IsSystem)
+            .Where(f => f.CollectionDefinitionId == collectionId && !f.IsSystem && f.Type != FieldType.Table)
             .OrderBy(f => f.DisplayOrder)
             .Select(f => f.Name)
             .ToListAsync(cancellationToken);
@@ -244,10 +244,21 @@ WHERE [CollectionId] = @CollectionId
         foreach (var field in fieldNames)
         {
             if (dict.TryGetValue(field, out var value))
-                data[field] = value is DBNull ? null : value;
+            {
+                var raw = value is DBNull ? null : value;
+                // Re-parse JSON string column values (e.g. manyToMany arrays stored as '[...]')
+                // so they are serialized as proper JSON arrays/objects in DataJson, not raw strings.
+                if (raw is string strVal && strVal.Length > 1 && (strVal[0] == '[' || strVal[0] == '{'))
+                {
+                    try { raw = JsonSerializer.Deserialize<JsonElement>(strVal); }
+                    catch { /* keep as string */ }
+                }
+                data[field] = raw;
+            }
         }
 
         var id = dict.TryGetValue("Id", out var idObj) && idObj is Guid g ? g : Guid.Empty;
+        //data["Id"] = id;
         var createdAt = dict.TryGetValue("CreatedAt", out var createdObj) && createdObj is DateTimeOffset c ? c : DateTimeOffset.UtcNow;
         var updatedAt = dict.TryGetValue("UpdatedAt", out var updatedObj) && updatedObj is DateTimeOffset u ? u : DateTimeOffset.UtcNow;
         var ownerId = dict.TryGetValue("OwnerId", out var ownerObj) ? ownerObj?.ToString() : null;
